@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.2 — Race Assist Update
+- Aero latch across all input methods; icon-only pause.
+- Full-circuit speed envelopes and optional predictive brake assistance; wet/condition reduction.
+- In-race G transmission and V assist switching, remapping and optional touch controls.
+- Interpolated timing-gate gaps, alternating leader and interval view every three seconds.
+- Rear-torque-limited regen blending, engine/coast tuning and live regen display.
+- Full-track CSV profiles, new dry/wet lap/system tests and browser patch guide.
+
 ## 3.0.1 — Handling & Reverse Update
 - Correct physical/render steering sign alignment and driver input mapping.
 - Deliberate automatic reverse, signed drive/braking and R indicator.

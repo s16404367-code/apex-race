@@ -20,12 +20,15 @@ export function stepCar(c,input,dt,env={}){
  const ratio=CAR.ratios[clamp(c.gear,1,8)-1]*CAR.finalDrive;
  c.rpm=clamp(Math.abs(c.u)/CAR.wheelRadius*ratio*60/(2*Math.PI),CAR.idle,CAR.limiter+500);
  if(c.direction===1&&!env.manual&&c.shift===0){if(c.rpm>11400&&c.gear<8){c.gear++;c.shift=CAR.shiftTime}else if(c.rpm<6900&&c.gear>1){c.gear--;c.shift=CAR.shiftTime}c.lastGear=c.gear;}
- const ersMode=env.ersMode||'manual';let wantsERS=input.ers||ersMode==='attack'||(ersMode==='balanced'&&c.v>45&&Math.abs(c.steerAngle)<.045);
+ const ersMode=env.ersMode||'manual';let wantsERS=ersMode==='manual'?Boolean(input.ers):ersMode==='attack'||(ersMode==='balanced'&&c.v>45&&Math.abs(c.steerAngle)<.045);
  c.deployKW=c.direction===1&&wantsERS&&ersMode!=='off'&&ersMode!=='harvest'&&c.energy>0&&c.throttle>.7&&c.brake<.05?Math.min(CAR.boostKW,c.energy/dt):0;
  let torque=engineTorque(c.rpm)*c.throttle*(c.fuel>0?1:0)*(1-c.parts.engine*.009)*(c.shift>0?.10:1);if(c.rpm>=CAR.limiter)torque=0;
  let drive=torque*ratio*CAR.efficiency/CAR.wheelRadius+c.deployKW*1000/Math.max(Math.abs(c.u),18);
  if(c.direction===-1)drive=-Math.min(drive,3200)*clamp((8-Math.abs(c.u))/2,0,1);
- const harvest=Math.min(110,c.brake*c.v*2.2+(c.throttle<.05?Math.max(0,c.v-8)*.25:0));c.energy=clamp(c.energy+(harvest-c.deployKW)*dt,0,CAR.batteryKJ);c.ers=c.energy/CAR.batteryKJ*100;
+ const coast=c.throttle<.05&&c.direction===1;const engineLevel=env.engineBraking??.5;
+ const desiredRegen=c.direction===1&&c.v>3&&c.deployKW===0&&c.energy<CAR.batteryKJ?(c.brake>.01?Math.min(110,c.brake*160):coast?12+engineLevel*18:0):0;
+ const regenForce=Math.min(2400,desiredRegen*1000/Math.max(c.v,3)/.7);
+ let recovered=0;
  const bias=env.brakeBias??.57;const wheelbase=CAR.frontArm+CAR.rearArm;const transferX=clamp(mass*c.ax*CAR.cgHeight/wheelbase,-mass*3,mass*3);const transferY=clamp(mass*c.ay*CAR.cgHeight/CAR.track,-mass*3,mass*3);
  const frontLoad=mass*9.81*CAR.rearArm/wheelbase+aero.front-transferX,rearLoad=mass*9.81*CAR.frontArm/wheelbase+aero.rear+transferX;
  let fxTotal=0,fyTotal=0,moment=0;
@@ -39,11 +42,15 @@ export function stepCar(c,input,dt,env={}){
   let wheelDrive=front?0:drive/2;const fade=clamp(1-Math.max(0,w.brakeTemp-900)/800,.35,1)*clamp(w.brakeTemp/160,.65,1);
   let braking=c.brake*CAR.brakeForce*(front?bias:1-bias)*.5*fade;
   w.lock=braking>limit&&c.v>3&&assist==='hardcore';if(assist!=='hardcore')braking=Math.min(braking,limit*.92);
-  let requested=wheelDrive-braking*Math.sign(longitudinal||1);if(c.throttle<.05&&!front)requested-=Math.sign(longitudinal)*Math.min(500,c.rpm*.045);
+  // Regenerative torque replaces rear friction braking, not adds to it.
+  const regen=front?0:Math.min(regenForce/2,c.brake>.01?braking:regenForce/2);
+  const engine=coast&&!front?Math.max(0,Math.min(900,c.rpm*.085)*(0.4+engineLevel)-regen):0;
+  braking=Math.max(0,braking-regen);
+  let requested=wheelDrive-(braking+regen+engine)*Math.sign(longitudinal||1);
   if(assist!=='hardcore'&&requested>limit*.93)requested=limit*.93;
   let lateralForce=-load*mu*Math.tanh(w.slipAngle*(front?8.2:10));if(w.lock)lateralForce*=.2;
   if(!front&&requested>0&&assist!=='hardcore'){const lateralUsage=clamp(Math.abs(lateralForce)/Math.max(limit,1),0,1);requested=Math.min(requested,limit*.95*Math.sqrt(1-lateralUsage*lateralUsage));requested*=clamp(1-(Math.abs(Math.atan2(c.lateral,Math.max(c.u,3)))-.06)/.12,0,1);}
-  let [fx,fy]=combinedForces(requested,lateralForce,limit*(w.lock?.8:1));w.fx=fx;w.fy=fy;w.slip=clamp((requested-fx)/Math.max(limit,100),-2,2);
+  let [fx,fy]=combinedForces(requested,lateralForce,limit*(w.lock?.8:1));recovered+=regen*Math.min(1,Math.abs(fx)/Math.max(Math.abs(requested),1))*Math.abs(longitudinal)*.7/1000;w.fx=fx;w.fy=fy;w.slip=clamp((requested-fx)/Math.max(limit,100),-2,2);
   const bx=fx*cs-fy*sn,by=fx*sn+fy*cs;fxTotal+=bx;fyTotal+=by;moment+=px*by-py*bx;
   w.omega=w.lock?0:longitudinal/CAR.wheelRadius*(1+Math.max(0,w.slip)*.6);w.spin=(w.spin+w.omega*dt)%(Math.PI*2);
   const slipWork=Math.abs(fy*side)+Math.abs(fx*w.slip*Math.max(w.speed,1));w.temp=clamp(w.temp+dt*(slipWork*.000035-(w.temp-(wet?25:35))*(.011+c.v*.0003)*(wet?2:1)),15,200);w.carcass+=(w.temp-w.carcass)*dt*.04;
@@ -51,9 +58,10 @@ export function stepCar(c,input,dt,env={}){
   w.wear=clamp(w.wear+(slipWork*.00000065+w.speed*.000006)*(COMPOUNDS[c.compound]||COMPOUNDS.medium).wear*(w.temp>120?2:1)*dt,0,100);w.puncture=w.wear>98;
   const target=clamp(load/(env.springRate??95000),0,.075);w.compression=approach(w.compression,target,dt*.15);
  }
+ c.regenKW=Math.min(desiredRegen,recovered,(CAR.batteryKJ-c.energy)/dt);c.energy=clamp(c.energy+(c.regenKW-c.deployKW)*dt,0,CAR.batteryKJ);c.ers=c.energy/CAR.batteryKJ*100;
  // Aerodynamic/rolling drag opposes motion; body-frame inertial coupling.
  let resistance=aero.drag+(Math.abs(c.x)>(env.width??18)/2+2?mass*.45+c.v*18:mass*.12);
- fxTotal-=Math.sign(c.u||1)*(resistance+(c.throttle<.02?Math.min(700,c.v*15):0));
+ fxTotal-=Math.sign(c.u||1)*(resistance);
  c.ax=clamp(fxTotal/mass,-55,35);c.ay=clamp(fyTotal/mass,-70,70);
  c.u+=(c.ax+c.yaw*c.lateral)*dt;c.lateral+=(c.ay-c.yaw*c.u)*dt;
  c.yaw+=clamp(moment/CAR.inertia,-15,15)*dt;c.yaw*=Math.exp(-dt*(c.v<3?6:.08));

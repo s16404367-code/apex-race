@@ -34,3 +34,10 @@ Lap timing requires a forward start-line crossing after at least 90% circuit pro
 
 ## Validation limits
 Tests verify symmetry, speed response, finite energy, aero scaling, friction bound, braking, fuel and thermal state sanity. A conservative pure-pursuit test driver completes each circuit inside road width. No measured real-world tyre data, professional driver validation or gold-lap target has been used. This is an inspectable simplified dynamics foundation, not validated real-car fidelity.
+
+## 3.0.2 speed assistance and energy corrections
+A 1,800-sample centreline envelope uses heading change across ±3 samples. Baseline lateral acceleration budget 5 m/s²; speed ceiling 90 m/s. Three circular backward passes enforce v² <= next_v² + 2×7×distance. Runtime samples ahead by max(5 m, 0.65×speed) and reduces targets for weather, compound, tyre life and damage. Brake demand is a bounded proportional controller (0–0.85), overriding throttle when active. Reverse and speeds below 4 m/s bypass it. The recommendations are NOT optimal racing-line speeds; they exclude real elevation, detailed brake fade, traffic, and calibrated tyre telemetry. Profiles are available as CSV; wet-slick columns use the initial 0.48 factor, not a prediction for every dynamic condition.
+
+3.0.2 supersedes earlier uncoupled energy recovery: requested brake recovery min(110, 160×brake) kW; coasting 12+18×engine-setting kW. A 2,400 N total rear regen force cap and 70% conversion efficiency apply. Actual recovery is proportional to delivered tyre longitudinal force and capped by speed/power/headroom. It replaces rear friction braking; coasting drag includes a shared engine/regen budget. No recovery under drive, below 3 m/s or in reverse. Full battery suppresses regen; physical engine drag remains. This is simplified blended braking, not a detailed motor/inverter simulation.
+
+Active aero is latched in app inputs, while physics continues receiving an armed flag and enforcing conditions. Both toggles clear on pause/reset. G changes transmission mode but leaves the current gear unchanged; automatic shifting resumes under normal RPM rules. V controls braking assist.

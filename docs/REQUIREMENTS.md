@@ -1,6 +1,6 @@
 # Master specification implementation audit
 
-The supplied v2.0 and v2.1 briefs are in specifications/. Release 3.0.1 is a development increment. A version label does not mean every milestone from 0.1 through 1.0 or every v2.1 section is finished.
+The supplied v2.0 and v2.1 briefs are in specifications/. Release 3.0.2 is a development increment. A version label does not mean every milestone from 0.1 through 1.0 or every v2.1 section is finished.
 
 | Requested milestone | Status in this release |
 |---|---|
@@ -40,3 +40,5 @@ The latest user asks for accurate real tracks; the master requires original publ
 3. Four-corner sprung dynamics and wheel inertia, full damage lifecycle, pit limiter; calibrate against consistent test targets.
 4. Complete HUD editor and gamepad calibration, then replay/ghosts.
 5. Career/championship only after driving and device acceptance stabilize.
+
+3.0.2 adds optional predictive corner braking, in-race transmission switching, timing-gate leaderboard gaps, aero toggle and coupled rear regen. These additions do not close the deferred full-simulator or hardware gates above.

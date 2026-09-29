@@ -1,14 +1,12 @@
-# 3.0.1 — Handling & Reverse Update
+# 3.0.2 — Race Assist Update
 
-## Requested corrections
-1. Two-bar PAUSE icon with a text label.
-2. Fixed mismatched physical/render steering signs; aligned driver input direction and wheel load indexing.
-3. Tap ERS to toggle, rather than hold. All input methods share a latch, cleared on pause/reset. ON arms your selected strategy; Off/Harvest remain non-deploying.
-4. Compact speed/gear/pedal panel under the right-hand minimap.
-5. All-road scenery clearance, including entire structure footprints and close parallel circuit arms.
-6. Open three-point halo attached to the chassis, updated source and GLB.
-7. Automatic reverse: stop, release brake briefly, press brake again. Gas brakes reverse travel before selecting forward at rest. R appears in the HUD. Reverse uses the tyre integrator with a low-speed drive ceiling; no boost or active aero.
+Read README.md for controls and docs/UPDATE-INSTRUCTIONS.md for the browser-only patch workflow. A full ZIP is also supplied.
 
-Theme, livery colours and existing save format retained. Existing saved touch layouts are not overwritten; re-edit/reset if an old ERS button sits over the moved instruments.
+- Space/touch/gamepad aero is a toggle. ON means armed: zones, speed, weather, damage and braking still determine opening. Brake closes aero but leaves it armed; pause/reset disarms.
+- Pause shows only two bars, retaining tooltip/accessibility name.
+- V toggles predictive corner braking (default ON). G switches Auto/Manual without leaving the race or changing the current gear. Both are remappable. Reverse remains available in both modes. Optional touch controls can be enabled in the editor.
+- Curvature and backward braking envelopes cover the entire track, including the start-line seam. Wet/tyre/damage factors lower recommended speeds. Driver must steer and can disable assistance. Targets are conservative and not proven best-lap solutions.
+- Leader/interval timing alternates every three simulation seconds; shared 25 m crossings are interpolated rather than estimating distance divided by current speed. Missing data shows —. Lap deficits take priority.
+- Brake recovery rises with pedal demand up to 110 kW; coast recovery requests 12–30 kW depending on engine-braking setting. Actual stored power is bounded by delivered rear tyre force, speed, 70% conversion efficiency and battery capacity. No charging at rest or full throttle. Rear regen replaces friction brake torque. Engine-braking tuning shares the coast drag budget to avoid double-counting.
 
-See docs/QA.md for passing automated checks and unverified hardware gates. The five map-derived circuits are not surveyed reproductions. Full master-spec completion, career, full suspension/damage, hardware certification and real GitHub deployment remain outside this patch; see docs/REQUIREMENTS.md.
+Testing details and limitations: docs/QA.md. Not deployed to a GitHub account; patch application and local subpath hosting tested. Hardware certification, career, detailed suspension and other master milestones remain incomplete.

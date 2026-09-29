@@ -1,8 +1,18 @@
-# APEX LINE — Handling & Reverse Update 3.0.1
+# APEX LINE — Race Assist Update 3.0.2
 
 A static browser open-wheel racer, upgraded from the initial 2.1.2 foundation using the supplied v2.0 and v2.1 specifications. This is a substantial **development release**, not a claim that every requested version/milestone is complete.
 
-## 3.0.1 corrections
+## 3.0.2 race systems
+- Toggle active aero with Space / touch / gamepad, with automatic zone/brake gating; pause/reset clears both aero and ERS toggles.
+- Icon-only pause button (accessible name and tooltip retained).
+- Optional corner braking, ON by default. V toggles it; G switches Auto/Manual transmission during a race. Both keys are remappable. New optional touch buttons are available in the layout editor.
+- Full-circuit curvature/braking envelopes; slower targets in wet conditions and with wear/damage. The assistant brakes even against held throttle. You still steer. It is NOT an optimal racing-line solver or a guarantee against crashes.
+- Timing tower alternates leader/preceding-car gaps every three simulation seconds, using interpolated 25 m timing gates. No shared timing yet displays —; lapped competitors show +N LAP.
+- Up to 110 kW braking recovery, modest 12–30 kW coasting recovery, adjustable engine braking, visible regeneration rate. No free charging under power or while stopped.
+- Five full-circuit CSV target tables in docs/speed-profiles; regenerate with npm run export:profiles.
+- Browser-only patch workflow: see docs/UPDATE-INSTRUCTIONS.md. Full ZIP still supported.
+
+## Previous 3.0.1 corrections
 - Corrected wheel/render/input steering signs, with wheel/body/world-direction regression checks.
 - Deliberate reverse selection, R dashboard indicator, same four-tyre integrator and approximately 29 km/h reverse speed ceiling. Also available with manual forward gears.
 - ERS toggle across keyboard, touch and gamepad; pause/reset turns it off. The toggle arms the selected strategy; Off/Harvest never deploy.
@@ -52,9 +62,11 @@ Open http://localhost:8080. `file://` is unsuitable for native ES module loading
 | Front-wheel steer | A/D or ←/→ |
 | ERS | Tap E to toggle ON/OFF |
 | Reverse | Stop → release S/↓ → press S/↓ again; W/↑ brakes reverse motion, then drives forward |
-| Active aero | Hold Space in a lime-marked zone |
+| Active aero | Tap Space ON/OFF; opens only in permitted zones |
 | Camera | C: chase / cockpit / high chase / nose |
 | Look back | Hold B |
+| Auto / Manual transmission | G (during race) |
+| Automatic corner braking | V (default ON) |
 | Manual up/downshift | Shift / Ctrl |
 | Pause | Escape |
 | Reset to track | R; invalidates current lap |

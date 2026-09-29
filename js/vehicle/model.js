@@ -10,7 +10,11 @@ export function createModel(paint){if(typeof paint==='string')paint=material(pai
  hull([[.15,.27,.66,.82],[.55,.24,.66,1.10],[1.15,.17,.46,.82],[1.9,.05,.35,.54]],paint);box(.27,.20,.10,carbon,0,.97,.5);
  let tub=mesh(new T.SphereGeometry(1,20,12),carbon,0,.73,-.30);tub.scale.set(.30,.16,.60);
  let helmet=mesh(new T.SphereGeometry(.185,20,12),ivory,0,.91,-.24);let visor=mesh(new T.SphereGeometry(.188,16,10,0,Math.PI),metal,0,.925,-.24);visor.rotation.y=Math.PI;
- const halo=new T.Group();body.add(halo);let ring=mesh(new T.TorusGeometry(.36,.026,6,28,Math.PI*1.65),carbon,0,1.09,-.33,halo);ring.rotation.x=Math.PI/2;ring.scale.y=1.4;box(.035,.35,.04,carbon,0,.92,-.76,halo);
+ const halo=new T.Group();halo.name='Chassis-mounted three-point halo';body.add(halo);
+ function haloTube(points,r=.028){const curve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p)));return mesh(new T.TubeGeometry(curve,20,r,8,false),carbon,0,0,0,halo)}
+ haloTube([[-.34,.76,.12],[-.34,1.08,.08],[-.29,1.12,-.40],[0,1.08,-.82],[.29,1.12,-.40],[.34,1.08,.08],[.34,.76,.12]]);
+ haloTube([[0,.55,-.98],[0,.83,-.91],[0,1.08,-.82]],.033);
+ for(let side of [-1,1])box(.13,.10,.18,carbon,side*.34,.77,.12,halo);
  const steering=new T.Group();steering.position.set(0,.78,-.65);body.add(steering);box(.33,.06,.05,carbon,0,0,0,steering);for(let s of [-1,1])box(.05,.18,.05,carbon,s*.15,0,0,steering);
  const frontWing=new T.Group();frontWing.position.set(0,.20,-2.52);body.add(frontWing);box(2.0,.065,.43,carbon,0,0,0,frontWing);let frontFlaps=[];for(let side of [-1,1]){box(.06,.28,.70,paint,side*.98,.10,.03,frontWing);let pivot=new T.Group();pivot.position.set(side*.52,.09,.16);frontWing.add(pivot);box(.84,.045,.27,paint,0,0,.1,pivot);frontFlaps.push(pivot);}
  const rearWing=new T.Group();rearWing.position.set(0,1.02,1.9);body.add(rearWing);box(1.55,.07,.42,carbon,0,0,0,rearWing);for(let s of [-1,1]){box(.045,.48,.67,paint,s*.79,.04,.10,rearWing);box(.04,.55,.05,carbon,s*.28,-.27,0,rearWing)}let rearFlap=new T.Group();rearFlap.position.set(0,.18,.17);rearWing.add(rearFlap);box(1.52,.055,.31,paint,0,0,.13,rearFlap);rearFlap.rotation.x=-.18;
@@ -19,4 +23,4 @@ export function createModel(paint){if(typeof paint==='string')paint=material(pai
  }
  root.userData={body,wheels,steerPivots,frontFlaps,rearFlap,frontWing,rearWing,steering,discs};return root;
 }
-export function animateModel(model,c,dt){let d=model.userData;if(!d.wheels)return;for(let i=0;i<4;i++){d.steerPivots[i].rotation.y=i<2?-c.steerAngle:0;d.wheels[i].rotation.x=-(c.wheels?.[i]?.spin||0);if(d.discs[i])d.discs[i].material.emissiveIntensity=Math.max(0,((c.wheels?.[i]?.brakeTemp||0)-650)/550);d.steerPivots[i].position.y=.36+(c.wheels?.[i]?.compression||0)*.25;}d.rearFlap.rotation.x=-.18-(c.aeroAngle||0)*1.05;d.frontFlaps.forEach(f=>f.rotation.x=-(c.frontAeroAngle||0)*.65);d.steering.rotation.z=-(c.steerAngle||0)*5;d.body.rotation.x=(c.ax||0)*.0012;d.body.rotation.z=(c.ay||0)*.0013;d.frontWing.visible=(c.parts?.frontWing||0)<85;d.rearWing.rotation.z=(c.parts?.rearWing||0)*.001;}
+export function animateModel(model,c,dt){let d=model.userData;if(!d.wheels)return;for(let i=0;i<4;i++){d.steerPivots[i].rotation.y=i<2?c.steerAngle:0;d.wheels[i].rotation.x=-(c.wheels?.[i]?.spin||0);if(d.discs[i])d.discs[i].material.emissiveIntensity=Math.max(0,((c.wheels?.[i]?.brakeTemp||0)-650)/550);d.steerPivots[i].position.y=.36+(c.wheels?.[i]?.compression||0)*.25;}d.rearFlap.rotation.x=-.18-(c.aeroAngle||0)*1.05;d.frontFlaps.forEach(f=>f.rotation.x=-(c.frontAeroAngle||0)*.65);d.steering.rotation.z=-(c.steerAngle||0)*5;d.body.rotation.x=(c.ax||0)*.0012;d.body.rotation.z=(c.ay||0)*.0013;d.frontWing.visible=(c.parts?.frontWing||0)<85;d.rearWing.rotation.z=(c.parts?.rearWing||0)*.001;}

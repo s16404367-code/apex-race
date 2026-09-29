@@ -1,12 +1,13 @@
 {
   "name": "apex-line",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "scripts": {
-    "test": "node tests/physics.mjs && node tests/lap.mjs",
+    "test": "node tests/physics.mjs && node tests/lap.mjs && node tests/corrections.mjs",
     "test:browser": "node tests/smoke.cjs",
     "start": "python3 -m http.server 8080 --bind 0.0.0.0",
     "test:upgrade": "node tests/upgrade.cjs",
-    "test:subpath": "node tests/subpath.cjs"
+    "test:subpath": "node tests/subpath.cjs",
+    "test:corrections": "node tests/corrections.mjs && node tests/corrections.cjs"
   },
   "keywords": [],
   "author": "",

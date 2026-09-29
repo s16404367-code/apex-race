@@ -1,8 +1,17 @@
-# APEX LINE — Dynamics Update 3.0.0
+# APEX LINE — Handling & Reverse Update 3.0.1
 
 A static browser open-wheel racer, upgraded from the initial 2.1.2 foundation using the supplied v2.0 and v2.1 specifications. This is a substantial **development release**, not a claim that every requested version/milestone is complete.
 
-## What changed
+## 3.0.1 corrections
+- Corrected wheel/render/input steering signs, with wheel/body/world-direction regression checks.
+- Deliberate reverse selection, R dashboard indicator, same four-tyre integrator and approximately 29 km/h reverse speed ceiling. Also available with manual forward gears.
+- ERS toggle across keyboard, touch and gamepad; pause/reset turns it off. The toggle arms the selected strategy; Off/Harvest never deploy.
+- Recognizable two-bar PAUSE button; compact right-hand instruments below the minimap.
+- Whole-circuit scenery-footprint filtering, including parallel track arms, barriers, trees, stands, signs and start supports.
+- Three-point chassis-mounted halo with a front post and two rear attachments; updated GLB.
+- Original UI theme and livery colours retained. Saved touch layouts are preserved; reset/re-edit a saved layout if its old ERS position overlaps the new dashboard.
+
+## Previous dynamics upgrades
 
 - Replaced track-relative sideways motion with a planar rigid body: front steering, four tyre force budgets, yaw inertia and independent world position.
 - Torque-curve drivetrain, eight gears, shift cut, engine braking, fuel mass and consumption.
@@ -41,7 +50,8 @@ Open http://localhost:8080. `file://` is unsuitable for native ES module loading
 |---|---|
 | Accelerate / brake | W/S or ↑/↓ |
 | Front-wheel steer | A/D or ←/→ |
-| ERS | Hold E (manual mode) |
+| ERS | Tap E to toggle ON/OFF |
+| Reverse | Stop → release S/↓ → press S/↓ again; W/↑ brakes reverse motion, then drives forward |
 | Active aero | Hold Space in a lime-marked zone |
 | Camera | C: chase / cockpit / high chase / nose |
 | Look back | Hold B |
@@ -98,3 +108,5 @@ Physics tests and conservative driver full-lap tests run without WebGL. Browser 
 - `.github/workflows/pages.yml`: static deployment
 
 Original game. Not affiliated with any official championship, team, driver, circuit operator or automotive manufacturer. No commercial racing-game meshes or official liveries are included.
+
+Additional correction suite: `npm run test:corrections` (local server required for browser portion).

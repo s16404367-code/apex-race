@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.1 — Handling & Reverse Update
+- Correct physical/render steering sign alignment and driver input mapping.
+- Deliberate automatic reverse, signed drive/braking and R indicator.
+- ERS latch for keyboard/touch/gamepad, off on pause/reset.
+- Recognizable pause control and compact right-hand dashboard.
+- Complete-road scenery-footprint checks; three-point supported halo.
+- New correction regressions and regenerated GLB.
+
 ## 3.0.0 — Dynamics Update
 - New world-space planar four-wheel force/yaw model; front wheels steer rather than translating the car across the track.
 - Engine torque map, eight ratios, shift cut, finite ERS, wheel friction circles, load transfer, thermal tyres/brakes, fuel mass.

@@ -1,11 +1,11 @@
 # Master specification implementation audit
 
-The supplied v2.0 and v2.1 briefs are in specifications/. Release 3.0.0 is a development increment. A version label does not mean every milestone from 0.1 through 1.0 or every v2.1 section is finished.
+The supplied v2.0 and v2.1 briefs are in specifications/. Release 3.0.1 is a development increment. A version label does not mean every milestone from 0.1 through 1.0 or every v2.1 section is finished.
 
 | Requested milestone | Status in this release |
 |---|---|
 | 0.1 First drive | Implemented: 3D car/track, controls, independent dynamics, walls, timing, pause/reset, low preset and static deployment. Five pure-physics automated laps pass. |
-| 0.2 Core sim feel | Partial: engine/gearbox, front steering, load transfer, combined tyre force, aero, surfaces, four cameras. No full 3D rigid body/suspension, reverse, swept wheel contacts or validated tyre data. |
+| 0.2 Core sim feel | Partial: engine/gearbox, front steering, load transfer, combined tyre force, aero, surfaces, four cameras. No full 3D rigid body/suspension, swept wheel contacts or validated tyre data. |
 | 0.3 Energy/aero | Core implemented: finite ERS, harvest/deploy modes, game zones, flap animations, HUD and RPM sound. No detection-gap rules, full race director, debug-force rendering. |
 | 0.4 Engineering | Partial: five compounds, wheel heat/wear/load, pressure/fuel/bias/ride/aero setup, sectors, telemetry CSV, timed service. No actual pit lane, limiter or full suspension setup. |
 | 0.5 Damage | Partial: impact-based front wing/suspension/floor, coupled grip/steering/aero effects and front-wing visibility. No full subsystem impact classification, cooling damage, retirement or repair strategy. |
@@ -37,6 +37,6 @@ The latest user asks for accurate real tracks; the master requires original publ
 ## Next release priorities
 1. Human driving calibration, HD 4400 / real phone/controller acceptance and regression fixes.
 2. Survey/reusable elevation and width data; robust collision/projection near close parallel track sections; real pit lanes and rules.
-3. Four-corner sprung dynamics and wheel inertia, full damage lifecycle, reverse/limiter; calibrate against consistent test targets.
+3. Four-corner sprung dynamics and wheel inertia, full damage lifecycle, pit limiter; calibrate against consistent test targets.
 4. Complete HUD editor and gamepad calibration, then replay/ghosts.
 5. Career/championship only after driving and device acceptance stabilize.

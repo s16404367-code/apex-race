@@ -1,80 +1,100 @@
-# APEX LINE · Web Edition 2.1.2
+# APEX LINE — Dynamics Update 3.0.0
 
-A standalone, playable open-wheel racing foundation built from the supplied v2.1 device-experience brief. Dark paddock UI, acid-lime accents, original procedural 3D assets, and no runtime CDN requests.
+A static browser open-wheel racer, upgraded from the initial 2.1.2 foundation using the supplied v2.0 and v2.1 specifications. This is a substantial **development release**, not a claim that every requested version/milestone is complete.
 
-**Scope:** This is a simplified arcade/simcade prototype, not a complete implementation of the 63-section brief or the unavailable v2.0 simulator. No existing game source was supplied. See RELEASE-NOTES.md for gaps and testing boundaries.
+## What changed
 
-## Run
+- Replaced track-relative sideways motion with a planar rigid body: front steering, four tyre force budgets, yaw inertia and independent world position.
+- Torque-curve drivetrain, eight gears, shift cut, engine braking, fuel mass and consumption.
+- 180 kW ERS with a finite 4 MJ battery, braking/coasting harvest and strategy modes.
+- Zone-controlled aero, marked on track and map, disabled by braking/wet conditions; animated front and rear flaps.
+- New original AL-02 model: tapered nose/body, sidepods, exposed suspension, rotating wheels, front-wheel steering, halo, mirrors, brake-disc heat glow. Exported GLB included.
+- Map-derived circuit outlines for Monza, Imola, Bahrain, Jeddah and Silverstone, with original public names and scenery.
+- Five tyre compounds, individual temperatures/wear/load, combined grip, brake temperature/fade, ABS/TC modes and basic impact damage.
+- Setup for fuel, tyre compound/pressure, brake bias, ride height and aero.
+- Real-time 12-second service stop (rivals continue), sectors, 10 Hz telemetry chart/CSV, validated save import/export.
+- Retained UI, livery colours, keyboard remapping, gamepad inputs, touch editor and tilt fallback.
 
-Use a static web server (ES modules cannot reliably run from `file://`):
+Read **docs/REQUIREMENTS.md** before treating this as a full simulator. The physical model is simplified and has not been validated against real car telemetry.
+
+## GitHub Pages
+
+1. Extract the ZIP and upload the **contents of `apex-line`** to your repository root. Include hidden `.github` and `.nojekyll` files.
+2. Push to `main`.
+3. Settings → Pages → Source → **GitHub Actions**.
+4. Wait for the Deploy APEX LINE workflow, then visit `https://USERNAME.github.io/REPOSITORY/`.
+
+Alternatively publish `main` / root using branch-based Pages. All runtime imports are relative and all assets are local. No npm build, backend, paid API, login, CDN or network service is required for gameplay. No service worker/offline installer is included.
+
+**This ZIP has not been deployed to a GitHub account.** Local project-subpath boot has been tested.
+
+## Local play
 
 ```sh
 python3 -m http.server 8080
 ```
+Open http://localhost:8080. `file://` is unsuitable for native ES module loading. Python is only a local file-server convenience, not a gameplay dependency. A modern WebGL2 browser is needed (Three.js r170). Low is the default; HD 4400 hardware compatibility/performance is not certified.
 
-Open http://localhost:8080. No production build or npm install is required. A WebGL-capable browser is required; hardware acceleration is recommended.
+## Controls
 
-## Publish on GitHub Pages
+| Action | Default |
+|---|---|
+| Accelerate / brake | W/S or ↑/↓ |
+| Front-wheel steer | A/D or ←/→ |
+| ERS | Hold E (manual mode) |
+| Active aero | Hold Space in a lime-marked zone |
+| Camera | C: chase / cockpit / high chase / nose |
+| Look back | Hold B |
+| Manual up/downshift | Shift / Ctrl |
+| Pause | Escape |
+| Reset to track | R; invalidates current lap |
+| Service | P while stopped within 120 m after start line |
+| Map / reduced HUD | M / H |
+| Telemetry | T (pauses session) |
 
-1. Extract the release ZIP.
-2. Create a GitHub repository, then commit **the contents of the apex-line folder** at its root. Include `.github/workflows/pages.yml` (hidden folders may be hidden by your file manager).
-3. Push to the `main` branch.
-4. Open repository **Settings → Pages → Source → GitHub Actions**.
-5. Wait for **Actions → Deploy APEX LINE** to succeed.
-6. Open `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/`.
+Aero requires >79 km/h, substantial throttle, no braking, small steering angle, dry conditions and intact rear wing. Zones are **game-defined**, not current official DRS rules. No detection-gap rule yet.
 
-Alternatively, use Pages → Deploy from a branch → main → /(root); the runtime is plain static files. Relative paths support project repositories. This delivery has not been pushed to or deployed on a GitHub account.
+Start with **Assisted**, automatic gears, medium tyres and dry conditions. Brake **before** sharp corners; throttle and steering share a grip budget. ERS is most useful on a straight. Select inter/wet tyres before a wet session in Race Engineering.
 
-## Drive
+Settings → Driving selects Assisted / Simulation / Hardcore. Assisted and Simulation have TC/ABS; Simulation enables damage. Hardcore disables TC/ABS. They share the same integrator.
 
-- WASD / arrows: steer, accelerate, brake
-- E: hold ERS boost
-- Space: hold active aero above 126 km/h
-- C: cycle chase / cockpit / high chase
-- B: hold look back
-- Shift / Ctrl: gears in manual transmission
-- Escape: pause
-- R: return to track (invalidates lap)
-- P: instant simplified service when stopped within 120 m after start line; adds 12 seconds to current lap
-- M / H: toggle map / reduced HUD
+Settings → Touch/Tilt → Edit Layout: drag, resize, adjust opacity and optional visibility. Separate portrait/landscape profiles save locally. Keyboard and touch remain fallback methods. Sensor/gamepad/fullscreen APIs depend on browser and actual hardware.
 
-Keyboard actions are remappable, with multiple bindings and conflict confirmation. Keybindings are additive up to three keys; reset restores defaults.
+## Circuit content
 
-Select keyboard, gamepad, touch, or tilt + touch in Settings. Keyboard remains available as fallback. Standard gamepad mapping is documented in the Gamepad settings tab. Web browsers may not expose a connected pad until a button is pressed.
+| Public name | Map reference |
+|---|---|
+| Parco Reale | Monza |
+| Santerno Valley | Imola |
+| Dune International | Bahrain |
+| Red Sea Corniche | Jeddah |
+| Royal Airfield | Silverstone |
 
-Touch editor: Settings → Touch / Tilt → Edit layout. Drag a visible button, or select one in the dropdown, resize it and adjust opacity. Save commits the layout, cancel restores the edit-start snapshot. Portrait and landscape layouts save separately per profile. Essential controls cannot be hidden.
+Coordinates are from Tomislav Bacinger's MIT-licensed circuit dataset. We do not substitute invented outlines, but smoothing and flat terrain mean these are **not surveyed replicas**. Width, kerbs, barriers, buildings and zones are approximate/original. Source accuracy, layout currency, elevation and official rules are not guaranteed. See LICENSES.md.
 
-Tilt needs real sensor events; API existence alone is not treated as proof of support. Enable on a supported HTTPS device, hold centered, then calibrate. Missing/stale motion data falls back to touch steering. Mobile fullscreen / motion / orientation support varies by platform.
-
-## Sessions and content
-
-- Two fictional circuits: Solstice Park and Cinder Coast (click circuit card to switch)
-- Grand Prix, sprint, free practice, time attack
-- Five simple path-following rivals in races, with three pace levels
-- One AL-01 chassis, four liveries, aero balance, automatic/manual gears
-- Clear/wet grip, basic ERS, fuel, tyre wear, damage and service
-- Local clean-lap personal records; off-track laps are invalid
-- Generated engine audio, minimap, classification, telemetry HUD
-
-## Tests
+## Testing
 
 ```sh
 npm ci
 npm test
 npx playwright install --with-deps chromium
-# Run the static server on port 8080 in another terminal
+# Start the static server on 8080 in a separate terminal.
 npm run test:browser
+npm run test:upgrade
+npm run test:subpath
 ```
 
-Browser test uses software WebGL and a low-resolution viewport. It checks session startup, throttle, pause/input clearing, binding conflict handling, touch resizing/saving, focus-loss pause, mobile menu overflow, and runtime errors. Node tests cover deterministic physics, braking, laps, damage and layout validation.
+Physics tests and conservative driver full-lap tests run without WebGL. Browser tests use Chromium software WebGL. `test:upgrade` also regenerates the original GLB. Local-only testing hooks are gated to localhost/127.0.0.1.
 
-## Runtime architecture
+## Files
 
-- `physics.js`: normalized input contract → fixed 120 Hz simplified vehicle model
-- `app.js`: device/key/touch/gamepad/tilt input → normalization → input smoothing in physics; viewport/fullscreen handling; local storage; scene and game states
-- `style.css`: responsive menus, race HUD, safe areas, touch editor
-- `vendor/three.module.js`: locally vendored Three.js 0.170.0, MIT license included
+- `physics.js`, `js/physics/models.js`: dynamics, tyre/aero/engine constants
+- `js/vehicle/model.js`: original procedural model and animation
+- `app.js`: scene, input, sessions, projection, telemetry and UI integration
+- `data/tracks/*.json`, `data/tracks.js`: sourced geometry and game zone metadata
+- `assets/models/al02-original.glb`: portable neutral-pose model; runtime uses procedural animated rig
+- `docs/`: physics, formats, performance, QA and requirements audit
+- `docs/specifications/`: supplied master and input upgrade briefs
+- `.github/workflows/pages.yml`: static deployment
 
-Settings and records stay in browser local storage. No accounts, analytics, backend, or network services. Browser storage restrictions degrade to session-only operation.
-
-All car/circuit geometry and branding are fictional original procedural content. No licensed team marks, real circuit scans, or third-party image/audio assets are included. Three.js is used under its bundled license.
+Original game. Not affiliated with any official championship, team, driver, circuit operator or automotive manufacturer. No commercial racing-game meshes or official liveries are included.

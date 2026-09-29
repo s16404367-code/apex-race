@@ -1,6 +1,6 @@
 # Master specification implementation audit
 
-The supplied v2.0 and v2.1 briefs are in specifications/. Release 3.0.2 is a development increment. A version label does not mean every milestone from 0.1 through 1.0 or every v2.1 section is finished.
+The supplied v2.0 and v2.1 briefs are in specifications/. Release 3.0.3 is a development increment. A version label does not mean every milestone from 0.1 through 1.0 or every v2.1 section is finished.
 
 | Requested milestone | Status in this release |
 |---|---|
@@ -9,8 +9,8 @@ The supplied v2.0 and v2.1 briefs are in specifications/. Release 3.0.2 is a dev
 | 0.3 Energy/aero | Core implemented: finite ERS, harvest/deploy modes, game zones, flap animations, HUD and RPM sound. No detection-gap rules, full race director, debug-force rendering. |
 | 0.4 Engineering | Partial: five compounds, wheel heat/wear/load, pressure/fuel/bias/ride/aero setup, sectors, telemetry CSV, timed service. No actual pit lane, limiter or full suspension setup. |
 | 0.5 Damage | Partial: impact-based front wing/suspension/floor, coupled grip/steering/aero effects and front-wing visibility. No full subsystem impact classification, cooling damage, retirement or repair strategy. |
-| 0.6 AI | Partial: five path-following opponents, corner lookahead, basic lane change/pass, grid/positions. AI does not use identical player dynamics; no robust defend/avoidance planner or AI LOD. |
-| 0.7 Weather | Partial: selectable dry/wet grip, compound response, temperatures and lighting. No dynamic precipitation, spray, drying line, rubber, time-of-day/night system. |
+| 0.6 AI | Partial: five path-following opponents, corner lookahead, basic lane change/pass, grid/positions. AI now uses shared player dynamics and corner/traffic braking, front-tip priority, gap/lane planning. No complete overtaking/stewarding planner or AI LOD. |
+| 0.7 Weather | Partial: selectable dry/wet grip, compound response, temperatures and lighting. Screen precipitation, tyre spray and wet material added. No changing weather intensity, drying line, rubber, time-of-day/night system. |
 | 0.8 Garage career | Livery and meaningful setup implemented. Upgrade tree, unlock economy, multiple cars and career development NOT implemented. |
 | 0.9 Championship | Records and validated export/import implemented. Championship/weekends, ghosts and replay buffers NOT implemented. |
 | 1.0 Polish | UI retained and controls tested, original model/audio, docs, local Pages subpath test. No hardware certification, real deployment, full accessibility/performance/30-minute acceptance. |

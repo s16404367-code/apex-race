@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.3 — Racecraft & Rain Update
+- Shared player/AI tyre dynamics, grip factors and corner/traffic brake controller.
+- Front-wing-tip priority frozen at corner approach, alongside lanes and following gaps.
+- Two-body oriented collision impulses; removed player-only speed overwrite.
+- Screen rain droplets, wet road material and pooled soft tyre spray with Low-quality budget.
+- Added collision/priority/shared-physics tests, six-car dry/wet laps and weather browser checks.
+- Retains previous controls, reverse, aero/ERS toggles, HUD and timing upgrades.
+
 ## 3.0.2 — Race Assist Update
 - Aero latch across all input methods; icon-only pause.
 - Full-circuit speed envelopes and optional predictive brake assistance; wet/condition reduction.

@@ -8,3 +8,5 @@ Local Chromium software-WebGL observations ranged from 97 draw calls / 36,674 tr
 **Not verified on Intel HD 4400.** Three.js r170 requires WebGL2; no WebGL1 fallback yet. Old GPU/browser drivers may fail. Use a current browser with acceleration enabled and Low quality. There is no GPU-string benchmark auto detector, adaptive resolution, temperature sensing, 30-minute memory certification or full AI LOD. These remain acceptance gates before production claims.
 
 Background tabs skip rendering and pause gameplay/audio. Low frame rate contributes at most 0.1 s per render frame to the fixed-step accumulator, bounding catch-up. This trades wall-clock timing fidelity for stability in extreme slowdowns; race timing is simulation time.
+
+3.0.3 increases CPU work: six full physics states, local projections and 15 potential collision pairs. Corner lookahead is skipped for pairs farther than 35 m. Rain uses one pooled Points draw call (144 particles for six cars on Low, 360 otherwise), a generated soft sprite and one pointer-transparent 2D overlay (20/48 droplets). No external assets or textures are fetched. Hardware frame-time certification remains outstanding.

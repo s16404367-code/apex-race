@@ -1,12 +1,16 @@
-# 3.0.2 — Race Assist Update
+# 3.0.3 — Racecraft & Rain Update
 
-Read README.md for controls and docs/UPDATE-INSTRUCTIONS.md for the browser-only patch workflow. A full ZIP is also supplied.
+Complete ZIP release. All 3.0.1/3.0.2 controls, reverse, steering alignment, ERS/aero toggles, icon-only pause, compact HUD, timing and regeneration remain included.
 
-- Space/touch/gamepad aero is a toggle. ON means armed: zones, speed, weather, damage and braking still determine opening. Brake closes aero but leaves it armed; pause/reset disarms.
-- Pause shows only two bars, retaining tooltip/accessibility name.
-- V toggles predictive corner braking (default ON). G switches Auto/Manual without leaving the race or changing the current gear. Both are remappable. Reverse remains available in both modes. Optional touch controls can be enabled in the editor.
-- Curvature and backward braking envelopes cover the entire track, including the start-line seam. Wet/tyre/damage factors lower recommended speeds. Driver must steer and can disable assistance. Targets are conservative and not proven best-lap solutions.
-- Leader/interval timing alternates every three simulation seconds; shared 25 m crossings are interpolated rather than estimating distance divided by current speed. Missing data shows —. Lap deficits take priority.
-- Brake recovery rises with pedal demand up to 110 kW; coast recovery requests 12–30 kW depending on engine-braking setting. Actual stored power is bounded by delivered rear tyre force, speed, 70% conversion efficiency and battery capacity. No charging at rest or full throttle. Rear regen replaces friction brake torque. Engine-braking tuning shares the coast drag budget to avoid double-counting.
+## New
+- Five AI cars now use the shared four-wheel integrator, fuel, tyres, gears, brakes, damage and weather response. Shared corner-speed and traffic-braking functions apply to the player when brake assist is ON. Difficulty only changes throttle aggression. AI does not deploy boost/aero, and uses automatic forward gears.
+- Corner priority from the foremost front-wing tip along the track tangent, not car centre or screen coordinates; 0.25 m tie tolerance. Rules freeze for the corner. Meaningful alongside overlap keeps separate lane targets and lower speed; a following car aims for one car length clear space, expanded in rain.
+- Two-car oriented hull collision solver with mass-weighted separation and equal/opposite normal impulses. Both cars react. It does not force the player backward or always sideways; contact direction and relative motion determine the outcome.
+- Soft tyre spray, screen droplets and darker wet-road material. Low preset reduces particle counts. Dry sessions hide the effects.
 
-Testing details and limitations: docs/QA.md. Not deployed to a GitHub account; patch application and local subpath hosting tested. Hardware certification, career, detailed suspension and other master milestones remain incomplete.
+## Rules and limits
+This is the requested game-specific priority convention, not an official motorsport rules implementation. No automatic penalty is assigned to a leader whose follower yields onto grass. Existing off-track clean-lap invalidation and physical damage still apply. Priority does not disable collision response or protect deliberate contact.
+
+The planner aims to leave room, not guarantee it. Six-car staggered dry/wet test laps were contact-free; side-by-side stress tests stayed on the road but still produced brief contacts on Monza and Imola. Player mistakes, spins and extreme pileups can defeat avoidance. There is no complete stewarding/overtake/optimal racing-line system.
+
+Collision response is planar oriented rectangles, with no detailed body deformation, angular impact torque or swept high-speed collision detection. Rain is visual particles/material shading, not simulated standing water, drying or reflections. Real-device performance remains unverified. Full audit: docs/REQUIREMENTS.md and docs/QA.md.

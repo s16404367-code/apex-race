@@ -1,8 +1,8 @@
 {
   "name": "apex-line",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "scripts": {
-    "test": "node tests/physics.mjs && node tests/lap.mjs && node tests/corrections.mjs && node tests/race-systems.mjs && node tests/assisted-lap.mjs",
+    "test": "node tests/physics.mjs && node tests/lap.mjs && node tests/corrections.mjs && node tests/race-systems.mjs && node tests/assisted-lap.mjs && node tests/traffic.mjs",
     "test:browser": "node tests/smoke.cjs",
     "start": "python3 -m http.server 8080 --bind 0.0.0.0",
     "test:upgrade": "node tests/upgrade.cjs",
@@ -10,7 +10,10 @@
     "test:corrections": "node tests/corrections.mjs && node tests/corrections.cjs",
     "test:systems": "node tests/race-systems.cjs",
     "test:wet": "WET=1 node tests/assisted-lap.mjs",
-    "export:profiles": "node tools/export-speed-profiles.mjs"
+    "export:profiles": "node tools/export-speed-profiles.mjs",
+    "test:traffic": "node tests/traffic-laps.mjs && WET=1 node tests/traffic-laps.mjs",
+    "test:alongside": "SIDE=1 node tests/traffic-laps.mjs",
+    "test:weather": "node tests/traffic-weather.cjs"
   },
   "keywords": [],
   "author": "",

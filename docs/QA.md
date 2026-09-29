@@ -1,4 +1,4 @@
-# QA results — 3.0.2
+# QA results — 3.0.3
 
 ## Automated, passed in this workspace
 - Identical inputs produce identical physics state.
@@ -51,3 +51,22 @@ No blanket 'all versions complete' status is justified. See REQUIREMENTS.md.
 | Silverstone | 204.8 / 0.60 | 309.2 / 0.83 |
 
 These are test-driver laps, not guaranteed best times or a claim of real-circuit accuracy. Human turn-in mistakes, damaged brakes and AI collisions can still cause excursions. The speed CSVs describe recommended envelopes, not validated speed limits.
+
+## 3.0.3 traffic / weather regression results
+- Rear-impact momentum transfer: front car speeds up, rear car slows, neither forced into reverse. Side contact changes lateral velocity. No overlap produces no collision.
+- Front-wing-tip priority can differ from centre position; it is frozen through a corner and cleared on exit. Alongside lane reservation and following brake demand tested. Identical controls/setup give identical AI/player physical states.
+- Six-car shared-controller laps across all five tracks, staggered starting grid, full throttle requests: all cars finish, no detected contact frames; maximum lateral offsets below 9 m.
+
+| Reference | Dry completion s / max offset m | Wet slick completion s / max offset m |
+|---|---|---|
+| Monza | 179.9 / 3.00 | 271.9 / 4.47 |
+| Imola | 194.5 / 3.20 | 294.6 / 3.49 |
+| Bahrain | 196.2 / 3.00 | 299.9 / 5.43 |
+| Jeddah | 235.4 / 3.00 | 354.0 / 3.00 |
+| Silverstone | 220.9 / 3.00 | 333.3 / 3.00 |
+
+- Side-by-side dry stress grid: all six finish and stay inside road width on each track. Contact frames: Monza 27, Imola 37, others 0. This explicitly does NOT certify contact-free racecraft. These are repeated 120 Hz overlap frames, not counts of independent incidents.
+- Browser: wet droplets contain rendered pixels, overlay ignores pointer events, Low spray count 144, road roughness changes, AI tyre loads/gear states integrated, dry restart hides weather. Wet screenshot inspected.
+- Existing browser controls, aero/ERS toggles, reverse, HUD layouts and road-clearance suites retained. Local /project/ boot remains tested; no actual GitHub deployment or physical-device certification.
+
+Commands: npm run test:traffic, npm run test:alongside, npm run test:weather. Existing npm test / test:wet / test:browser / test:systems / test:corrections / test:subpath remain available.

@@ -1,8 +1,17 @@
-# APEX LINE — Race Assist Update 3.0.2
+# APEX LINE — Racecraft & Rain Update 3.0.3
 
 A static browser open-wheel racer, upgraded from the initial 2.1.2 foundation using the supplied v2.0 and v2.1 specifications. This is a substantial **development release**, not a claim that every requested version/milestone is complete.
 
-## 3.0.2 race systems
+## 3.0.3 racecraft and rain
+- AI now uses the same stepCar four-wheel physics, braking envelope, weather/condition factors, setup and assist setting as the player. Difficulty changes throttle aggression only, not corner grip limits. AI drives automatic forward gears and does not deploy ERS/active aero; it no longer has a separate spline-speed controller.
+- With V brake assist ON, player and AI both receive corner and traffic braking. Turning it OFF disables player assistance; AI still needs its driving controller. Drivers still control their own steering.
+- Corner-entry priority uses the foremost front-wing tip projected along the local track direction, with a 0.25 m tie tolerance. Pairwise decisions freeze through the corner. Existing side-by-side overlap reserves lanes; leading cars otherwise aim at the centreline and followers yield.
+- Following target: roughly 5.2 m clear space (one car length), with added wet safety distance. Alongside cars use a slower shared envelope and separate lane targets. This is a basic racecraft planner, not collision-proof AI or a fastest racing-line solver.
+- Contacts apply equal-and-opposite directional impulses to BOTH cars instead of overwriting the player's speed. Rear hits can push the front car forward; side impacts can push sideways. No automatic race penalty for the leader when a follower yields; physical damage and normal player off-track lap invalidation remain.
+- Wet mode adds subtle screen droplets, a darker low-roughness road and soft tyre-spray particles. Low uses 20 droplets/24 particles per car; other presets use 48/60. No dynamic puddles, drying line or true reflections.
+- Full ZIP delivery: extract and upload the contents of apex-line as usual. See docs/UPDATE-INSTRUCTIONS.md.
+
+## Previous 3.0.2 race systems
 - Toggle active aero with Space / touch / gamepad, with automatic zone/brake gating; pause/reset clears both aero and ERS toggles.
 - Icon-only pause button (accessible name and tooltip retained).
 - Optional corner braking, ON by default. V toggles it; G switches Auto/Manual transmission during a race. Both keys are remappable. New optional touch buttons are available in the layout editor.
@@ -10,7 +19,7 @@ A static browser open-wheel racer, upgraded from the initial 2.1.2 foundation us
 - Timing tower alternates leader/preceding-car gaps every three simulation seconds, using interpolated 25 m timing gates. No shared timing yet displays —; lapped competitors show +N LAP.
 - Up to 110 kW braking recovery, modest 12–30 kW coasting recovery, adjustable engine braking, visible regeneration rate. No free charging under power or while stopped.
 - Five full-circuit CSV target tables in docs/speed-profiles; regenerate with npm run export:profiles.
-- Browser-only patch workflow: see docs/UPDATE-INSTRUCTIONS.md. Full ZIP still supported.
+- The former patch workflow is superseded by full ZIP delivery for 3.0.3.
 
 ## Previous 3.0.1 corrections
 - Corrected wheel/render/input steering signs, with wheel/body/world-direction regression checks.

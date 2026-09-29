@@ -1,0 +1,17 @@
+{
+  "name": "apex-line",
+  "version": "2.1.2",
+  "scripts": {
+    "test": "node tests/physics.mjs",
+    "test:browser": "node tests/smoke.cjs",
+    "start": "python3 -m http.server 8080 --bind 0.0.0.0"
+  },
+  "keywords": [],
+  "author": "",
+  "description": "Standalone browser racing foundation",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  },
+  "private": true,
+  "type": "module"
+}

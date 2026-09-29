@@ -1,0 +1,2452 @@
+3D OPEN-WHEEL RACING SIMULATOR — UPGRADED MASTER DEVELOPMENT PROMPT (v2.0)
+0. PURPOSE OF THIS DOCUMENT
+This is the single source of truth for designing, engineering, implementing, testing, documenting and shipping a complete browser-based 3D open-wheel racing simulator that runs on GitHub Pages.
+
+You are not building a “3D driving demo”, a toy racer, or a visually impressive but physically fake showcase.
+
+You are building a small but genuine racing simulator with:
+
+physically coherent vehicle behaviour
+real setup consequences
+tyre, aero, fuel, ERS, damage and weather systems that actually affect the car
+a playable first circuit
+a professional motorsport UI
+a maintainable architecture
+graceful performance on low-end integrated graphics
+legally clean original assets
+zero backend dependency
+Every later system must be able to plug into the foundation without rewriting the entire project.
+
+If a feature is shown in the HUD, telemetry, garage, setup screen or race director, it must exist in the simulation. Never fake a system merely to claim it exists.
+
+1. ROLE AND OWNERSHIP
+You are simultaneously:
+
+Lead game engineer
+Technical director
+3D graphics programmer
+Vehicle-physics engineer
+Tyre-model engineer
+Aerodynamics engineer
+Gameplay systems designer
+AI designer
+UI/UX designer
+Audio integrator
+Performance engineer
+QA engineer
+Technical writer
+Legal/asset-compliance reviewer
+You must think in layers:
+
+Architecture
+Physics correctness
+Gameplay loop
+Performance budget
+UX clarity
+Legal cleanliness
+Expandability
+Polish
+Do not optimise for cinematic screenshots at the expense of drivability.
+
+Priority order is mandatory:
+
+Vehicle stability and controllability
+Tyre behaviour
+Aerodynamic forces
+Braking
+Acceleration
+Weight transfer
+Suspension
+Surface interaction
+Damage
+Weather and track evolution
+AI
+Progression
+Graphics
+Extra presentation features
+2. PRODUCT IDENTITY
+Working title
+APEX LINE
+Subtitle: Open-Wheel Racing Simulator
+
+Use an original fictional motorsport world. Do not use:
+
+Formula 1
+FIA
+F1 team names
+F1 driver names
+official F1 liveries
+official F1 car designations
+official circuit copyrighted branding
+commercial game IP
+You may create an original championship identity, for example:
+
+World Open-Wheel Championship (WOC)
+Grand Prix International
+Apex Grand Prix
+The first circuit is Monza-inspired, not a copyrighted recreation of official Autodromo Nazionale Monza branding, grandstand IP, official circuit 3D assets, or proprietary game geometry.
+
+Call the first track something original but geographically/evocatively Italian and historically high-speed, for example:
+
+Autodromo di Brianza
+Parco Reale Circuit
+Monza-inspired National Park Circuit (internal code name: brianza)
+Public-facing name should be original. Internal data can keep a code like track_brianza_v1.
+
+The car is an original modern open-wheel single-seater, inspired by contemporary engineering principles, not a replica of a specific championship’s current car.
+
+3. MANDATORY PLATFORM CONSTRAINTS
+The game must:
+
+run entirely client-side
+be static-host compatible
+work on GitHub Pages
+require no backend server
+require no paid APIs
+require no mandatory account/login
+require no Node/Express/PHP/Python/Firebase/database for gameplay
+use relative paths
+work from https://USERNAME.github.io/REPOSITORY/
+also work from a local folder as much as practical, with documented exceptions (ES modules may need a static server locally)
+Allowed technologies
+HTML5
+CSS3
+Modern JavaScript (ES modules preferred)
+WebGL 1 / WebGL 2 via Three.js
+Canvas 2D for HUD overlays if useful
+Web Audio API
+Gamepad API
+Pointer Lock / Fullscreen API
+LocalStorage / IndexedDB
+JSON data files
+glTF / GLB models
+compressed or browser-decodable textures
+optional PWA/service worker for offline cache only if it does not break GitHub Pages or first load
+Disallowed for v1 gameplay
+required WebGPU
+required WASM physics engines that destroy low-end performance
+required login
+required internet after first load, except optional future leaderboards
+DRM
+proprietary ripped assets
+server-authoritative multiplayer in v1
+Important hardware target
+The game must degrade gracefully and remain playable on:
+
+Intel Core i3-4005U
+8 GB RAM
+Intel HD Graphics 4400
+1366×768 or 1920×1080 laptop panel
+integrated GPU with weak fill-rate, weak shader performance, limited VRAM/shared memory, poor anisotropy, poor MSAA
+This machine is from 2014. Treat it as a first-class target, not an afterthought.
+
+Therefore:
+
+WebGL 1 fallback path is desirable
+WebGL 2 enhanced path is allowed
+WebGPU may exist later as an optional renderer, never as a requirement
+shaders must have quality branches
+draw calls must be aggressively reduced
+textures must be small by default
+shadows must be optional and cheap
+post-processing must be optional
+physics must use a fixed timestep and not scale into instability on slow frames
+4. QUALITY PRESETS
+Implement these graphics presets:
+
+Low (default on HD 4400 class)
+Medium (default on modest discrete GPUs / newer iGPUs)
+High
+Ultra
+Also implement an Auto detector that inspects:
+
+GPU renderer string
+WebGL version
+max texture size
+max vertex uniforms
+anisotropy support
+estimated FPS during a 2–3 second benchmark scene
+device memory if available
+pixel ratio
+whether the machine is thermal-throttling after a short load
+Default logic:
+
+HD 4400 / similar Intel HD / old iGPU → Low
+Unknown / weak → Low
+Average laptop GPU → Medium
+Strong desktop GPU → High
+Ultra only if benchmark stays above target with headroom
+Low preset intent
+Playable, readable, stable. Not ugly-on-purpose, but brutally efficient.
+
+Typical Low settings:
+
+resolution scale 60–70%
+no shadows or blob shadows only
+no reflections or only planar fake reflection on car body at very low rate
+no motion blur
+no SSAO
+no volumetric fog
+no particles except essential rain/sparks at tiny counts
+low-poly distant trees as billboards or instanced low meshes
+bake as much as possible
+1 directional light + cheap ambient/hemisphere
+reduced trackside objects
+smallest textures
+no MSAA, optional FXAA cheap
+disable dynamic environment map
+simplified car shader
+reduced tyre smoke
+reduced crowd/spectator proxies
+aggressive LOD
+smaller shadow map if shadows exist at all
+Never reduce physics accuracy merely because FPS is low unless the simulation itself is overflowing the frame. Graphics must be the first sacrifice. UI must remain readable.
+
+5. DESIGN PHILOSOPHY
+Simulator, not arcade
+The car must have mass. It must transfer weight. It must understeer, oversteer, lock, spin up, wash out on grass, gain stability from downforce at speed, and become nervous if the rear wing/floor is damaged or the rear tyres overheat.
+
+Accessible, not elitist
+The player can choose:
+
+Casual
+Simulation
+Hardcore
+The underlying vehicle model should remain the same family of systems. Assists and simplifications wrap the model. Do not maintain three unrelated physics engines.
+
+Honest systems
+If the HUD shows:
+
+ERS 62%
+tyre wear 43%
+rear wing open
+brake temp 780°C
+fuel 48.2 kg
+front wing damage 35%
+then those values must be consumed by the simulation that frame.
+
+One-car, one-track foundation first
+Do not drown v0.1 in championship trees, particle luxury, or photo mode. First make the car drive around a real lap with timing, camera, collision, HUD and repeatable physics.
+
+Expand, don’t rewrite
+All systems should be data-driven where possible:
+
+tracks in JSON
+cars in JSON
+upgrades in JSON
+assists in config
+input bindings in config
+quality presets in config
+rules in config
+6. TECH ARCHITECTURE PRINCIPLES
+Separate ticks
+Never couple everything to requestAnimationFrame naively.
+
+Implement three clocks:
+
+Physics tick — fixed, e.g. 120 Hz internal or 60 Hz on Low, with accumulator
+Render tick — variable, interpolated
+UI tick — 10–30 Hz for most HUD numbers, higher only for RPM/speed needle if needed
+Use interpolation between previous and current physics states for smooth rendering.
+
+Determinism goal
+Full lockstep determinism is not required for v1, but:
+
+use fixed dt for physics
+avoid random gameplay events during physics integration except through a seeded RNG
+keep a seeded random for weather/AI incidents so a session can be reproduced in debug
+Memory and CPU budget for HD 4400
+Suggested starting budgets (Low):
+
+under ~250–400 draw calls
+under ~150k–300k triangles on screen if possible
+textures mostly 256–512, a few 1024
+one fullscreen canvas
+audio voices capped
+AI cars: 0 in v0.1–0.5, then 4–11 with aggressive LOD
+no per-frame GC spikes from allocating vectors
+Use object pools for:
+
+particles
+audio sources
+AI decision scratch data
+telemetry samples
+collision events
+vector/quaternion math if not using pooled Three.js patterns carefully
+Module structure
+Do not put the game in one giant HTML file.
+
+Use ES modules and a clear folder map. A recommended structure:
+
+text
+
+index.html
+404.html
+manifest.json                  # optional PWA
+css/
+  reset.css
+  main.css
+  menu.css
+  hud.css
+  garage.css
+  telemetry.css
+  debug.css
+js/
+  main.js
+  boot.js
+  game.js
+  config/
+    constants.js
+    qualityPresets.js
+    inputDefaults.js
+    physicsPresets.js
+  core/
+    clock.js
+    eventBus.js
+    objectPool.js
+    rng.js
+    math.js
+    spatialHash.js
+    frustum.js
+  physics/
+    vehiclePhysics.js
+    tyreModel.js
+    aeroModel.js
+    engineModel.js
+    transmission.js
+    suspension.js
+    brakes.js
+    damageModel.js
+    weightTransfer.js
+    collision.js
+    surfaceModel.js
+  vehicle/
+    car.js
+    carFactory.js
+    setup.js
+    upgrades.js
+    visualDamage.js
+    livery.js
+  track/
+    trackLoader.js
+    trackMesh.js
+    trackPhysics.js
+    trackRules.js
+    racingLine.js
+    drsZones.js
+    pitLane.js
+    surfaces.js
+  ai/
+    aiDriver.js
+    aiPersonality.js
+    aiRace.js
+    aiStrategy.js
+    pathFollower.js
+  race/
+    session.js
+    raceManager.js
+    raceDirector.js
+    championship.js
+    pitStop.js
+    penalties.js
+    timing.js
+    startLights.js
+    safetyCar.js
+  ui/
+    menu.js
+    hud.js
+    telemetry.js
+    garage.js
+    setupScreen.js
+    pauseMenu.js
+    loadingScreen.js
+    championshipUi.js
+    replayUi.js
+  systems/
+    saveSystem.js
+    audio.js
+    weather.js
+    lighting.js
+    performance.js
+    input.js
+    camera.js
+    debug.js
+    replay.js
+    localisation.js
+  render/
+    renderer.js
+    materials.js
+    lod.js
+    instancing.js
+    postfx.js
+    carShader.js
+    trackShader.js
+data/
+  cars/
+  tracks/
+  upgrades/
+  ai/
+  localisation/
+  rules/
+assets/
+  models/
+  textures/
+  sounds/
+  fonts/
+docs/
+README.md
+LICENSES.md
+CHANGELOG.md
+CONTRIBUTING.md
+No mandatory bundler
+Prefer native ES modules so GitHub Pages can host the repo as-is.
+
+If a bundler is used, the published docs/ or dist/ must still be static and complete. Source should remain readable.
+
+Path rules
+relative imports only
+no absolute /js/main.js roots that break project-page hosting
+remember GitHub project pages live in a subpath
+use a small baseUrl helper if needed
+test both user-page and project-page style URLs
+7. LEGAL AND ASSET POLICY
+This is non-negotiable.
+
+Never include
+ripped models from F1 games, EA F1, Codemasters F1, Assetto Corsa, iRacing, rFactor, Forza, Gran Turismo, Automobilista, F1 Manager, or any commercial sim
+extracted official circuit LiDAR/game meshes
+copyrighted team liveries
+copyrighted logos, fonts, anthems, commentary
+trademarked championship branding
+paid asset-store content whose license forbids redistribution in a public GitHub repo
+Allowed
+original models you create
+CC0 / public domain
+compatible Creative Commons (prefer CC0, CC-BY, CC-BY-SA with attribution)
+MIT/BSD/Apache code
+genuinely free sound libraries with redistribution rights
+original procedural textures
+original liveries
+Before adding any third-party asset, record:
+Asset name
+Author
+Source URL
+License name and version
+Commercial use allowed?
+Modification allowed?
+Redistribution allowed?
+Attribution required?
+Local path
+Date accessed
+Put this in LICENSES.md.
+
+Also add a short in-game Credits screen.
+
+Original car modelling rule
+The car must be original. It should look like a modern open-wheel car because the physics and packaging demand that shape, not because it copies a 2024/2026 championship car’s copyrighted bodywork.
+
+Distinct original design cues are required:
+
+original nose
+original sidepod philosophy
+original wing endplates
+original livery language
+original team name
+8. GAME START AND BOOT FLOW
+Boot sequence
+Minimal HTML shell
+Capability detect (WebGL, audio, gamepad, memory)
+Load critical CSS/fonts
+Show loading screen immediately
+Load core JS
+Detect quality preset
+Load remaining modules
+Preload first-track essential assets
+Initialise renderer, audio, input, save
+Enter main menu
+Loading screen
+Clean, dark, motorsport, no childish animation.
+
+text
+
+APEX LINE
+OPEN-WHEEL RACING SIMULATOR
+
+LOADING
+[████████░░░░░░░░] 52%
+
+Currently: Track geometry
+Show real progress by asset groups, not a fake timer.
+
+If load fails, show a readable error:
+
+WebGL unavailable
+file missing
+storage blocked
+audio blocked until gesture
+First user gesture should unlock audio.
+
+Main menu
+Quick Race
+Practice
+Time Trial
+Qualifying (can unlock after v0.6)
+Race
+Championship
+Garage
+Car Setup
+Upgrades / Development
+Track Select
+Controls
+Settings
+Telemetry / Replay (if data exists)
+Credits
+Quit to loading/idle (browser-safe)
+Initially unlocked:
+
+1 car
+1 track
+Practice
+Time Trial
+Quick Race / Race vs ghost or vs limited AI later
+Garage basic
+Setup basic
+Settings
+Controls
+Locked items should be visible but greyed, with unlock condition text. Do not hide the entire future game.
+
+9. SESSION TYPES
+Implement session architecture even if early versions only use some of them.
+
+Free Practice
+Time Trial / Hotlap
+Qualifying (single-session first)
+Sprint (later)
+Race
+Championship weekend
+Tutorial / Driving School (later)
+Test session in garage wind/straight (optional)
+Practice
+unlimited laps or timed session
+optional ghost of best lap
+setup changes allowed
+fuel selectable
+tyre compound selectable
+no or reduced penalties
+damage optional
+Time Trial
+optimal track conditions or player-selected
+default clear/dry unless chosen otherwise
+ghost of personal best
+no AI by default
+detailed lap analysis on completion
+sector splits
+invalid lap detection
+Race
+grid
+start lights
+optional formation lap later
+race distance selectable: 3 / 5 / 10 / 25 / 50% / 100% later
+pit window later
+rules on/off
+AI when available
+Championship
+Optional mode, data-driven, small at first (5 events), expandable.
+
+10. FIRST PLAYABLE FANTASY WEEKEND LOOP
+The first complete player fantasy must work like this:
+
+MAIN MENU
+→ SELECT ORIGINAL CAR
+→ SELECT MONZA-INSPIRED CIRCUIT
+→ SELECT PRACTICE OR RACE
+→ OPTIONAL SETUP/TYRES/FUEL
+→ CAR ON GRID
+→ LIGHTS OUT
+→ DRIVE WITH ARROW KEYS
+→ BRAKE
+→ CORNER
+→ ACCELERATE
+→ USE ERS
+→ USE ACTIVE AERO IN VALID ZONES
+→ MANAGE TYRES
+→ AVOID GRASS/GRAVEL PENALTIES
+→ COMPLETE LAP
+→ SEE LAP TIME AND SECTORS
+→ COMPARE WITH BEST
+→ ADJUST SETUP
+→ RACE AGAIN
+
+If that loop is not fun and stable, nothing else matters.
+
+11. FIRST CAR — ORIGINAL OPEN-WHEEL SINGLE-SEATER
+Create one hero car with separate meshes/nodes.
+
+Visual components (separate where possible)
+front wing main plane
+front wing flaps
+front wing endplates
+nose
+front suspension (wishbones, push/pull rod, uprights)
+front wheels / rims / tyres / brake ducts / discs / calipers
+halo
+helmet/driver bust
+steering wheel
+monocoque
+mirrors
+sidepods
+airbox / engine cover
+floor / undertray
+bargeboards / turning vanes (simplified original)
+rear suspension
+rear wheels / tyres / ducts
+beam wing (if present in original design)
+rear wing main plane
+DRS flap / active flap
+rear wing endplates
+diffuser
+exhaust (visual)
+camera housing
+jack points / number board (optional)
+collision spark emitters under floor/plank (later)
+Proportions
+Use realistic open-wheel packaging:
+
+long wheelbase
+very low ride height
+large front/rear wings
+exposed tyres
+driver seated reclined
+halo above cockpit
+floor generating significant downforce conceptually
+narrow cockpit opening
+inboard suspension elements implied
+Materials
+carbon fibre weave (cheap tiled normal + anisotropy approximation on High/Ultra only)
+painted body
+matte floor
+rubber tyres with sidewall and contact-darkening later
+metallic suspension
+glass/visor
+emissive lights for rain/night later
+Visual states that must be driven by systems later
+DRS flap angle
+steering wheel rotation
+suspension compression
+wheel rotation and modest tyre deformation later
+brake disc glow
+front wing missing elements
+rear flap damage
+dirty floor / grass stains
+wet tyre shine
+heat haze optional Ultra only
+Do not wait for a 200k-triangle show car. A clean 8k–25k triangle car with good silhouette is better than a heavy ripped-looking mesh that tanks HD 4400.
+
+Provide:
+
+car_hero_low.glb
+car_hero_med.glb optional
+collision hull separate
+cockpit interior simple but convincing for cockpit cam
+12. CAMERAS
+Implement a camera director with runtime switching.
+
+Mandatory cameras
+Chase camera (default)
+
+third person
+look-ahead based on steering and speed
+distance/height FOV configurable
+collision-safe later
+shake from kerbs, rumble strips, engine vibration, impacts, high-speed instability
+damped follow, not glued jitter
+Cockpit camera
+
+driver eye point
+visible halo
+visible steering wheel
+modest helmet occlusion
+optional wheel/dash
+mirrors: later, cheap render-on-demand or prerendered fake
+Nose camera
+
+low, aggressive, front-wing visible
+TV camera
+
+slightly offset broadcast chase
+longer lens feel
+slower yaw
+Additional cameras to architecture in, even if later
+onboard rear
+fly-by
+trackside TV spots triggered by sectors
+replay broadcast director
+garage turntable
+hood/rollhoop
+Camera settings
+FOV
+chase distance
+chase height
+look-ahead
+stiffness
+shake intensity
+motion sickness reduction mode (less roll, less shake, higher FOV option)
+cockpit camera pitch/seat position
+C cycles cameras. Also bindable. Pause menu can select.
+
+Do not let the camera fight the car. The player must always be able to read the next corner.
+
+13. CONTROLS AND INPUT
+Default keyboard
+Arrow Up: Throttle
+Arrow Down: Brake (and reverse only from near-stop if reverse enabled)
+Arrow Left: Steer left
+Arrow Right: Steer right
+Space: Active Aero / DRS when permitted
+E: ERS deploy / cycle ERS mode if held/modifier
+Shift: Upshift (manual)
+Ctrl: Downshift (manual)
+R: Reset car / return to track
+C: Camera
+F: Look back
+H: Toggle racing line assist
+P: Pause
+Esc: Menu
+V: Cycle HUD density
+T: Telemetry overlay
+N: Next camera (alias)
+L: Headlights later
+M: Map
+U: Pit request
+I: Info / spotter
+~ or F8: Debug (hidden)
+Also support WASD alternative preset.
+
+Input system requirements
+remappable keys
+separate drive controls vs menu controls
+prevent accidental menu presses while racing except Esc/P
+analogue feel from keyboard via rise/fall rates (not binary 0/1 instantly on steer)
+steer speed, steer return, steer linearity, speed-sensitive limit
+throttle gamma
+brake gamma
+deadzones for sticks
+raw vs filtered steering
+Gamepad / controller
+Use Gamepad API.
+
+Support:
+
+Xbox-style
+DualShock/DualSense generic mapping fallback
+wheel if browser exposes axes (best-effort)
+Typical mapping:
+
+RT: throttle
+LT: brake
+left stick / wheel axis: steer
+A: confirm
+B: cancel
+Y: camera
+X: DRS
+LB/RB: down/up shift
+D-pad: HUD/ERS modes
+Start: pause
+Back: pit limiter / map
+Show a controller calibration screen:
+
+axis detect
+invert
+deadzone
+saturation
+combined throttle/brake axis optional
+rumble if actuator available (impacts, rumble strips, lockups)
+Touch / mobile fallback
+Not the primary experience, but architecture should allow:
+
+on-screen steer, throttle, brake
+camera button
+pause
+reduced quality forced
+no cockpit complexity
+Do not block desktop shipping on mobile perfection.
+
+Control assistance layer
+Assists sit on top of input before physics, except where they must read vehicle state (TC, ABS, steering help).
+
+14. VEHICLE PHYSICS — CORE REQUIREMENT
+Do not make an arcade car that turns by yawing the body independently of tyres.
+
+Implement a simplified but physically meaningful model:
+
+rigid body with mass and inertia
+4 contact patches
+per-tyre load
+combined slip
+engine/transmission torque to driven wheels
+brake torque
+aero forces at centre of pressure, split front/rear
+drag opposite velocity
+rolling resistance
+weight transfer
+simple suspension (spring/damper per corner)
+surface friction multipliers
+damage multipliers
+fuel mass
+ERS extra power
+active aero coefficient changes
+Recommended body model
+Use a single rigid body plus 4 suspension corners.
+
+State per car:
+
+position
+velocity
+orientation
+angular velocity
+world-space forces/torques accumulator
+Per wheel:
+
+angular velocity
+load
+slip ratio
+slip angle
+tyre temp (surface/carcass)
+wear
+pressure
+camber relative
+steer angle (front)
+suspension compression / velocity
+on ground flag
+surface type
+radius
+brake temp
+Mass properties
+Start from a coherent open-wheel race car, simplified:
+
+dry mass in a plausible range (e.g. 740–800 kg including driver, tunable)
+fuel extra mass 0–110 kg depending on session
+CG height low
+CG longitudinal position tunable
+polar inertia higher yaw than a go-kart, much lower than a road car
+unsprung mass simplified
+Numbers may be simplified for fun, but relationships must be coherent:
+
+more mass → worse accel/brake/corner
+more downforce → more grip and more drag
+more speed → aero grip rises roughly with v²
+locking tyres → big loss of lateral capability
+grass → huge grip loss and instability
+hot overworked tyres → fall off
+cold tyres → less grip
+damaged floor → nervous and low downforce
+Integration
+semi-implicit Euler or RK2, but keep it stable
+clamp insane forces
+sleep not needed
+CCD not full, but prevent tunnelling of kerbs with swept sphere/ray for each wheel
+Stability first
+A car that constantly explodes into jitter, tunnels into the tarmac, or spins from a 1° input is a failed physics build.
+
+Build a “straight-line stability” test and a “constant radius” test early.
+
+15. ENGINE MODEL
+Implement a proper engine object, not a magic acceleration value.
+
+Variables
+RPM
+idle RPM
+max RPM / limiter
+stall RPM if clutch/idle mismanaged (optional Realistic/Hardcore)
+throttle position 0–1
+throttle response lag
+current torque
+current power
+engine braking torque
+engine temperature (later)
+engine damage / reliability wear
+fuel flow
+engine mode
+ERS additive power
+limiter behaviour (hard cut, soft, ignition cut sound)
+Torque curve
+Use a data curve, not a single peak.
+
+Example approach:
+
+low-RPM weak
+strong mid
+taper near limiter
+Power = torque * RPM * constant.
+
+Use a realistic open-wheel power-to-weight feeling, even if peak power is rounded for gameplay. The car should feel strong on straights, especially Monza-inspired ones, but not like a rocket-arena vehicle with no drag.
+
+Engine braking
+Off-throttle produces deceleration dependent on:
+
+gear
+RPM
+engine mode
+clutch state if any
+Throttle response
+Not instant in Realistic/Hardcore. Casual can be snappier.
+
+Engine modes (optional but useful)
+Conservative
+Standard
+Push
+Attack
+Qualify
+Affect:
+
+power
+fuel consumption
+ERS harvest/deploy maps
+reliability wear
+throttle mapping
+Fuel consumption
+Depends on:
+
+throttle
+RPM
+engine mode
+ERS substitution (ERS can reduce ICE fuel use slightly if modelled)
+damage/rich mixture later
+If HUD fuel changes, mass must change.
+
+16. TRANSMISSION
+Gears
+8 forward
+1 reverse
+neutral optional
+Data
+gear ratios
+final drive
+efficiency
+shift time
+auto-upshift RPM
+auto-downshift RPM
+throttle cut on upshift
+blip on downshift (auto-blip assist)
+Modes
+Automatic
+Manual
+Manual with suggested shift lights
+Semi-auto paddles (gamepad)
+Behaviour
+gear-dependent acceleration
+hitting limiter in short gear
+long gears for Monza-inspired track
+adjustable gear ratios in setup where appropriate
+failed downshift if over-rev in Hardcore
+possible engine damage on violent over-rev
+Pit limiter
+When pit limiter on:
+
+cap speed to pit limit
+audio change
+HUD indicator
+17. TYRES — FIRST-CLASS SYSTEM
+Tyres are the game.
+
+Do not implement a timer that simply says “grip goes down after 5 minutes”.
+
+Compounds
+Soft
+Medium
+Hard
+Intermediate
+Wet
+Optionally later: prototype/test compound.
+
+Each compound has:
+
+peak grip
+working temperature window
+warm-up rate
+cooling rate
+wear rate
+carcass stiffness
+wet performance
+graining/blistering thresholds (simplified)
+rolling resistance
+qualifying extra grip vs race drop-off
+Per-tyre continuous state
+temperature surface
+temperature carcass
+wear 0–100%
+grip available
+pressure
+load
+slip angle
+slip ratio
+camber gain
+contact patch load
+dirt pickup
+wetness / film
+puncture flag
+flat spot amount
+puncture slow/fast
+Heating
+Heat from:
+
+longitudinal slip (accel/brake)
+lateral slip (cornering)
+work = force * slip * dt
+track temperature conduction
+braking radiation later
+kerb scrubbing
+sliding
+Cooling
+Cool from:
+
+air speed
+ambient temp
+wet surface
+low load straights
+rain
+lift-and-coast
+Wear
+Wear increases with:
+
+distance
+energy through contact patch
+slip
+wheelspin
+lockups / flat spots
+temperature above window
+abrasive surface (kerb, gravel)
+camber overload
+dirty air later optional
+driving style (smooth vs aggressive)
+Grip must fall as wear rises, with compound-specific cliffs. Softs: high peak, short life. Hards: lower peak, longer life.
+
+Combined slip
+Use a simplified combined-slip model (Pacejka-inspired or brush-inspired, simplified):
+
+peak at modest slip
+falloff after peak
+longitudinal and lateral share a friction budget
+if the player brakes and turns beyond budget, the tyre saturates
+This is essential. Independent fake “turn grip” + “brake grip” will feel wrong.
+
+Pressure
+Affects:
+
+contact patch
+heating
+wall stiffness
+wear distribution
+low-speed comfort vs high-speed stability (simplified)
+Setup tyre pressures must matter.
+
+Punctures
+From:
+
+violent debris later
+extreme kerbs optional
+heavy contact
+random events if enabled
+critical wear + damage
+Punctured tyre:
+
+deflates over time
+huge handling loss
+sparks/visual later
+speed limited realistically
+Visuals
+modest squash
+dirt
+extra blur optional
+wet sheen
+smoke only when sliding enough, pooled, quality-scaled
+18. STEERING
+Do not instantly rotate the car.
+
+Steering angle at the front wheels is rate-limited and speed-sensitive.
+
+Low speed
+More steering authority, larger max angle.
+
+High speed
+Reduced max angle and/or reduced rate, so the car is not twitchy at 320 km/h.
+
+Player settings
+sensitivity
+linearity
+deadzone
+steering assist 0–High
+speed sensitivity amount
+self-aligning torque feel (camera/gamepad rumble proxy)
+Ackermann
+Simplified Ackermann can exist in Realistic. Casual can ignore.
+
+Damage
+Steering damage:
+
+pull left/right
+reduced max angle
+oscillation
+19. AERODYNAMICS
+Aero is the soul of an open-wheel car, especially on a Monza-inspired circuit.
+
+Forces
+drag ~ Cd * A * rho * v²
+downforce ~ Cl * A * rho * v²
+split into front and rear
+optional small side force / yaw aero later
+ride-height sensitivity
+rake sensitivity simplified
+yaw sensitivity simplified (instability if sliding)
+Variables
+total downforce
+total drag
+front aero load
+rear aero load
+aero balance %
+L/D
+ride height front/rear
+floor multiplier
+diffuser multiplier
+front wing angle
+rear wing angle
+DRS/active flap state
+dirty air factor later
+damage multipliers
+density from weather/altitude/temp
+Setup consequences must be real
+More rear wing:
+
+more rear downforce
+more stability
+more drag
+lower top speed
+better high-speed direction change up to a point
+Less rear wing (Monza-style low drag):
+
+higher top speed
+worse braking stability
+easier oversteer on corner entry if rear light
+more care needed on kerbs/high-speed direction changes
+More front wing:
+
+better front bite
+can induce oversteer if rear not supporting
+small drag increase
+Floor damage:
+
+large downforce loss
+balance shift
+instability
+Centre of pressure
+Visualise in debug. If CoP is too far aft, understeer. Too far forward, nervous.
+
+Ride height:
+
+too low: floor may bottom, lose efficiency, spark, damage plank later
+too high: lose downforce
+Do not make aero a hidden +speed cheat. The player should feel planted at 250+ and relatively mechanical at 80.
+
+20. ACTIVE AERO / DRS
+This is a simulator, not an official FIA product. Rules are configurable.
+
+Track data must include
+detection zone(s)
+activation zone(s)
+deactivation / braking zone(s)
+start finish relevance
+enabled flag
+gap requirement optional (race only)
+practice always-available option
+Conditions to open
+Configurable, default race-like:
+
+in activation zone
+after detection
+within X seconds of car ahead (if AI exists)
+not in braking zone
+throttle above threshold
+brake below threshold
+not in wet unless allowed
+not damaged rear wing beyond threshold
+not in pit lane
+not under SC/VSC/yellow if rules say so
+Close when
+brake pressed beyond threshold
+leave zone
+steering beyond threshold optional
+speed below threshold
+damage
+manual toggle off
+session rules disable
+HUD
+ACTIVE AERO AVAILABLE
+ACTIVE AERO OPEN
+ACTIVE AERO CLOSED
+ACTIVE AERO DISABLED
+DETECTED
+Physics
+Open:
+
+rear downforce down
+drag down
+top speed up
+high-speed rear stability down
+The flap must visually open.
+
+Never allow infinite everywhere-on DRS.
+
+21. ERS / HYBRID ENERGY SYSTEM
+Implement a finite energy system.
+
+State
+battery SoC %
+energy stored kJ or simplified units
+harvest rate
+deploy rate
+max deploy per lap optional
+max battery capacity
+MGU-K style deploy (simplified)
+optional MGU-H / heat harvest later as a simple extra harvest on high RPM
+Modes
+Off
+Harvest
+Balanced
+Attack
+Qualify
+Automatic
+E deploys or cycles depending on settings. Allow:
+
+hold to deploy
+toggle
+mode cycle with modifier
+Harvest
+During:
+
+braking
+off-throttle deceleration
+optional lift-and-coast bonus
+not infinite
+Deploy
+Adds power at the drivetrain, consumes battery.
+
+Limits:
+
+cannot deploy if empty
+reduced if battery hot later
+reduced if PU damage
+Automatic spends in straights / overtaking / defending
+HUD honesty
+If ERS is 0%, the extra power is gone. The player must feel it on the long straight.
+
+Strategy
+Players should think:
+
+deploy on main straight
+harvest into chicane
+save for overtake
+don’t dump all on lap 1 unless qualifying
+22. BRAKES
+Variables
+pedal pressure
+front/rear brake balance
+brake by wire rear (simplified, especially with ERS harvest)
+disc temperature FL/FR/RL/RR
+pad wear later
+brake duct size setup
+ABS on/off/level
+lockup flags
+brake migrate with temp
+Fade
+Hot brakes:
+
+less peak torque
+longer stopping distance
+possible fire/glow visual Ultra
+in extreme, failure
+Cold brakes:
+
+less initial bite
+Lockups
+If brake torque > tyre long grip:
+
+wheel locks
+flat spot
+loss of steer if fronts
+smoke
+ABS if enabled modulates
+Stopping distance depends on
+speed
+downforce
+tyre grip/compound/temp/wear
+surface
+brake temp
+brake damage
+fuel mass
+slope
+wetness
+ABS vs no ABS
+Monza-inspired first chicane should be a major heavy-braking skill test.
+
+23. SUSPENSION AND WEIGHT TRANSFER
+Implement simplified but meaningful suspension.
+
+Per corner:
+
+spring rate
+damper bump/rebound
+anti-roll contribution
+ride height
+travel
+bump stops
+anti-dive/anti-squat simplified optional
+Weight transfer
+Braking → load to front
+Acceleration → load to rear
+Cornering → load to outside
+
+This changes each tyre’s normal load, therefore its grip. This is mandatory.
+
+Setup effects
+Stiffer springs:
+
+more responsive
+worse kerbs
+less mechanical grip on bumps
+Softer:
+
+better kerb absorption
+more pitch/roll
+possible aero platform instability
+ARBs:
+
+change understeer/oversteer balance
+Ride height:
+
+aero + bottoming
+The car must feel different over the first-chicane kerbs versus a smooth straight.
+
+24. GRIP AND SURFACES
+Surfaces
+Asphalt (racing line vs off-line later)
+Kerb (paint, sausage later)
+Grass
+Gravel
+Sand
+Wet asphalt
+Standing water
+Pit lane (different grip/limit)
+Concrete runoff
+Dirt/dust
+Each affects:
+
+mu
+tyre temp
+wear
+rolling resistance
+audio
+particles
+steering disturbance
+possible damage
+Grass should be punishing but not randomly explosive. The car should slide, lose driveshaft-like traction, and recover poorly if the player stays in it.
+
+Kerbs should unsettle, add bump, maybe add a little extra forward jolt, and heat/wear tyres. Aggressive sausage kerbs can launch or damage if enabled.
+
+Track evolution (v0.7+)
+rubbering-in on racing line
+marbles off line
+drying line after rain
+track temp from sun/time
+greasy first laps
+Even a simplified two-layer grip map (base + rubber) is valuable.
+
+25. DAMAGE SYSTEM
+Race setup toggle: Damage ON/OFF.
+
+If OFF:
+
+visual impacts optional sparks only
+no performance loss
+no retirement
+still collide with walls so the player cannot drive through them
+If ON:
+
+Track severity 0–100% per subsystem.
+
+Subsystems
+front wing
+rear wing
+floor
+diffuser
+sidepod left/right
+suspension FL/FR/RL/RR
+wheel/tyre
+steering
+gearbox
+engine / PU
+ERS
+brakes
+cooling
+halo (visual/structural)
+exhaust
+Severity bands
+0–20 minor: small aero loss, cosmetic
+20–50 moderate: clear performance loss
+50–80 severe: must pit or limp
+80–100 critical: possible retirement, failure, inability to continue safely
+Do not destroy the car from a tiny kiss of a wall. Use impulse thresholds, glancing vs head-on, speed, angle, part hit.
+
+Performance effects (mandatory coupling)
+front wing damage → front downforce down, under/oversteer change, DRS still independent
+rear wing damage → drag/downforce change, instability
+floor damage → big downforce loss, porpoising-like instability simplified
+suspension damage → pull, reduced travel, blow-up risk
+engine damage → power down, overheat, failure
+wheel damage → vibration, grip loss
+puncture → deflation
+radiator/sidepod → overheat
+Retirement
+If critical and Hardcore, car stops / smoke / limp-off. Casual can still crawl.
+
+Visual damage
+Swap or hide wing elements, add decals, misalignment, sparks, smoke. Use cheap techniques on Low.
+
+26. FUEL
+Variables
+fuel remaining kg/litres
+fuel capacity
+consumption rate
+fuel mass applied to vehicle mass and CG slightly rearward if tank is behind driver
+fuel flow limit optional
+low-fuel warning
+out of fuel = engine cut
+More fuel:
+
+worse accel
+worse braking
+worse tyre wear potentially
+more understeer if CG shifts
+longer stint
+Strategy matters even in short races if consumption is tuned to be felt.
+
+27. WEATHER, AMBIENT AND TIME OF DAY
+Weather options
+Clear
+Cloudy
+Overcast
+Light rain
+Heavy rain
+Wet (already soaked)
+Drying
+Random
+Dynamic
+Dynamic weather
+Gradual:
+
+cloud density
+precipitation intensity
+puddle buildup
+grip reduction
+visibility
+audio
+tyre temp drop
+wiper later if visor cam
+spray from cars (quality scaled)
+Rain must affect braking, accel, cornering, temperature, visibility, AI line choice.
+
+Intermediates vs wets vs slicks must be a real decision. Slicks in standing water should aquaplane (simplified: grip collapse with speed * water depth * tyre width factor).
+
+Time of day
+Morning
+Afternoon
+Evening
+Night
+Affects:
+
+sun angle
+shadow length (if shadows on)
+ambient light
+track temp
+visibility
+headlight use
+UI contrast
+Night on Low: just darker hemisphere light + cheap lamps, no expensive shadow maps.
+
+Wind
+Later: small head/tail/cross component affecting top speed and a tiny aero yaw. Keep subtle.
+
+28. TRACK — MONZA-INSPIRED HIGH-SPEED ITALIAN CIRCUIT
+Do not copy proprietary game assets.
+
+Recreate original geometry from public knowledge of a park circuit with:
+
+very long main straight
+heavy braking into a tight chicane
+another chicane
+fast sweeping curves
+a long curved “back” section
+a high-speed Parabolica-like final corner
+pit lane parallel to main straight
+runoff at chicanes
+trees in a park-like perimeter
+grandstand proxies that are original and low poly
+gravel/grass runoffs
+start/finish
+grid slots
+marshal posts later
+Required layout features
+Main straight
+First chicane (heavy brake test)
+Short burst
+Second chicane
+Fast right-hand complex
+Long acceleration zone
+Technical Lesmo-like corners
+Back straight
+Ascari-like complex
+Final long right onto main straight
+Pit entry before final corner or as public reference suggests, but original
+Pit exit blending with care onto main straight
+Accuracy target: recognisable as a Monza-inspired park circuit, not a vertex-perfect copyrighted clone of a commercial mesh.
+
+Track data file
+data/tracks/brianza.json (example) should contain:
+
+name, code, length, country, clockwise flag
+centreline polyline (dense)
+width samples
+left/right boundary
+elevation
+camber/banking if any
+sector 1/2/3 split positions
+start/finish
+grid poses
+pit lane path, entry, exit, boxes, speed limit
+DRS detection/activation/deactivation
+corner names and apexes
+braking zone hints for AI
+racing line
+alternative lines
+surface regions
+runoff types
+spawn/reset poses
+camera TV points
+ambient audio regions
+legal track-limit polylines
+speed traps
+marshal sectors
+environment presets (trees, objects instances)
+lighting probes later
+weather drainage / puddle regions later
+version
+Store coordinates in meters. Authoring can be from a 2D editor or exported spline.
+
+Track mesh strategy for HD 4400
+tiled track ribbon with atlased asphalt
+separate kerb meshes, instanced if possible
+low-res terrain
+instanced trees (impostors at distance)
+few unique buildings
+baked AO in textures if possible
+no dense grass geometry; texture + cheap cards
+collision: simplified ribbon + walls + major objects, not full visual mesh
+Racing line metadata
+AI and assist line should be a spline with:
+
+target speed
+braking points
+gear hints
+camber
+DRS expected
+aggression allowed
+wet line offset
+29. TRACK LIMITS AND RACE RULES
+Initial implementation can be simplified, but architecture should exist.
+
+Rules
+false start / jump start
+stall
+track limits (3-strike or time-invalid, configurable)
+corner cutting gain → invalidated lap or penalty
+pit lane speed limit
+blue flags
+yellow flags
+double yellow
+safety car
+VSC
+red flag later
+ignored blue later penalties
+collision penalties later
+grid order
+formation later
+parc fermé later in championship
+Start lights
+5 red lights sequence, random delay within a tiny window, jump-start detection based on moving before lights out.
+
+Safety car / VSC
+Random events or race director triggers:
+
+SC: bunch field, speed cap, no DRS, pit allowed with rules
+VSC: delta time, no overtaking, reduced speed
+Player can disable random events.
+
+Penalties
+warning
+time penalty
+drive-through later
+stop-go later
+grid drop later
+disqualify / DNF
+Keep v0.1 to invalid laps + reset. Expand without breaking driving.
+
+30. AI OPPONENTS
+Do not ship AI that magnetically follow the player or drive like heat-seeking missiles.
+
+AI must understand
+racing line
+braking points
+throttle application
+corner exit
+overtaking zones (straights, DRS)
+defending (inside line, one move)
+ERS
+active aero
+tyre wear/temp
+fuel
+pits
+weather line
+mistakes under pressure
+blue flag behaviour
+SC behaviour
+Personality
+Calm
+Balanced
+Aggressive
+Erratic (rare)
+Parameters:
+
+skill
+consistency
+aggression
+defending
+wet skill
+tyre management
+gap acceptance
+mistake rate
+reaction delay
+AI should be able to:
+
+miss apex
+lock up rarely
+run wide
+botch chicane
+not recover with instant 2g magic
+Performance scaling
+Difficulty should change:
+
+AI speed targets
+error rate
+pit strategy quality
+ERS quality
+not just a hidden +10% grip cheat if avoidable. A little rubber-banding is allowed in Casual only, never in Hardcore.
+Count vs performance
+On HD 4400:
+
+Low: 4–7 cars
+Medium: 8–12
+High/Ultra: full grid if stable
+Distant AI: no tyre smoke, lowest LOD, simplified physics (follow spline with lateral offset) and only nearby cars get full vehicle model. This is essential.
+
+Names / teams
+Original fictional roster. No real F1 drivers.
+
+31. HUD — RACE INFORMATION DESIGN
+Dark, professional, readable at speed, not cluttered.
+
+Always-on core (compact)
+speed
+gear
+RPM bar / lights
+lap time
+position
+lap number
+delta
+flag
+Extended
+throttle / brake bars
+ERS % and mode
+fuel %
+tyre compound + 4 temps + wear
+tyre pressure optional
+active aero status
+DRS status
+damage icons
+weather / track state
+sector
+best lap
+gap ahead/behind
+pit limiter
+penalties
+SC/VSC
+suggested gear
+engine mode
+brake balance
+steering angle optional debug
+HUD density modes
+Minimal
+Standard
+Full Sim
+Broadcast
+V cycles.
+
+Colour language
+temps: blue cold, green window, yellow hot, red overheat
+ERS deploy green, harvest orange
+damage red
+flags authentic-style but original
+not unreadable neon soup
+Do not animate HUD constantly. Numbers can interpolate slightly. No motion-sickness UI parallax.
+
+Minimap / track map
+Simple 2D outline with player, sector, pit, DRS zones. Cheap.
+
+32. TELEMETRY AND LAP ANALYSIS
+Live telemetry overlay
+Graphs or traces:
+
+speed
+RPM
+throttle
+brake
+steering
+gear
+ERS
+downforce
+drag
+aero balance
+ride height
+tyre temps
+tyre wear
+slip
+suspension travel
+G long / G lat
+Recording
+Sample at 10–30 Hz to a ring buffer for the lap.
+
+After lap:
+
+current vs best overlay
+time loss map by track position
+sector times
+top speed
+average speed
+min corner speeds for named corners
+max braking G / max brake pressure
+throttle-on %
+ERS deployed
+fuel used
+tyre wear delta
+invalid reasons
+Export later: JSON/CSV from a blob download (still client-side).
+
+This is a simulator. Data is part of the fantasy.
+
+33. GARAGE, SETUP AND AERO BALANCE
+Every slider must have a real physics effect. No placebo sliders.
+
+Setup pages
+Aerodynamics
+Transmission
+Suspension
+Brakes
+Tyres
+Electronics
+Steering / assists
+Fuel / strategy
+Adjustable items
+front wing
+rear wing
+ride height F/R
+spring stiffness F/R
+ARB F/R
+damper bump/rebound if not too many for UX, or simple Comfort/Stiff
+brake balance
+brake pressure
+brake ducts
+tyre pressures FL/FR/RL/RR or F/R
+camber F/R
+toe F/R
+differential on-throttle / off-throttle
+preload simplified
+steering ratio/sensitivity
+gear ratios
+ERS maps
+engine mode default
+ride-height aero trade
+ballast / ballast position if rules allow later
+Live predicted readout
+Show estimated:
+
+front aero %
+rear aero %
+total downforce at 150 / 250 / 320 km/h
+drag
+L/D
+top speed estimate on target straight
+high-speed balance
+low-speed balance
+tyre heat tendency
+fuel weight effect
+Example copy:
+
+More rear wing: +rear stability, +cornering confidence, −top speed
+Less rear wing: +top speed, −rear stability on entry
+
+3D garage viewer
+Turntable car, quality scaled, setup parts animate (wing flaps). Cheap lighting.
+
+Presets:
+
+Wet
+Balanced
+Low Drag
+High Downforce
+Player custom slots saved in LocalStorage
+34. UPGRADES AND PROGRESSION
+Start the player with a basic but drivable car. Do not unlock everything.
+
+Currencies
+XP / driver level
+Credits
+Development points (optional second resource)
+Earned from:
+
+race completion
+position
+clean driving
+fastest lap
+championship
+challenges
+beating ghosts
+Categories
+Engine
+Aerodynamics
+Chassis
+Suspension
+Brakes
+Tyres
+Reliability
+Energy system
+Electronics
+Cooling
+Levels Stock → 5.
+
+Each node:
+
+cost
+level requirement
+performance effect
+reliability effect
+weight effect
+description
+visual change if any
+trade-off if any
+Do not make upgrades cartoonishly powerful. A Level 5 engine should be noticeable, not a different sport.
+
+Higher power can mean:
+
+more tyre wear
+more fuel use
+more cooling need
+more reliability risk if not upgraded in parallel
+Visual development tree
+Dark motorsport tech-tree. Locked nodes readable. Cannot buy if broke.
+
+Save all unlocks locally.
+
+35. CHAMPIONSHIP
+Optional.
+
+First season: 5 events, first track repeated with different weather/length or later add more tracks as copies of layout variants if needed. Better: design data format so new tracks drop in.
+
+Standings:
+
+driver
+points
+wins
+podiums
+fastest laps
+DNFs
+poles later
+Configurable points table.
+
+Weekend structure simplified:
+
+practice optional
+qualifying
+race
+Injuries/reliability can cause DNF.
+
+36. SAVE SYSTEM
+Client-side only.
+
+LocalStorage and/or IndexedDB
+Save:
+
+settings
+bindings
+quality
+best laps / ghosts
+telemetry summaries
+upgrades
+credits / XP
+championship
+setups
+unlocked content
+career stats
+assist presets
+version
+Features
+autosave
+multiple slots if possible
+export save (JSON download)
+import save
+reset
+version migration
+checksum/simple sanity to avoid totally corrupt saves
+No account required.
+
+Ghosts: store a compressed array of pose samples for a lap, not a video.
+
+37. AUDIO
+Only licensed-free / original sounds.
+
+Layers
+engine loop(s) pitch/volume by RPM and load
+limiter
+gear cut
+turbo/hybrid whine optional
+wind
+tyre rumble by surface and load
+kerb buzz
+lockup squeal
+grass/gravel
+brake
+collision layers
+rain
+puddles
+crowd very low
+UI clicks
+pit limiter beep
+start lights beeps
+radio/spotter later, original voice or text-to-spotter simple
+Engine must not be a single recording played at 1.0. Use at least RPM-pitched loops and load crossfade.
+
+Cap voices on Low.
+
+Distance/attenuation for AI cars.
+
+Mute when tab hidden.
+
+Respect browser autoplay rules.
+
+38. GRAPHICS AND RENDERER
+Three.js WebGLRenderer.
+
+Must-haves
+frustum culling
+LOD
+instanced trees/crowds/props
+compressed or small textures
+texture anisotropy off on Low
+pixel ratio cap (1.0 on Low, never 2.0 on HD 4400)
+dynamic resolution if FPS < target
+cheap materials on Low (MeshLambert/MeshPhong or simple custom)
+PBR only Medium+
+shadow map optional, tiny, cascaded only Ultra
+no default Three.js studio lighting extravagance
+physically roughly consistent exposure
+car self-shadow optional
+skydome / simple sky, not 16k HDRI on Low
+fog cheap
+Shaders by quality
+Low: unlit/vertex colour + one dir light
+Medium: basic PBR, no SSR
+High: better env, disc glow, rain
+Ultra: limited postFX, better shadows, particles
+
+PostFX (all optional)
+FXAA
+bloom tiny
+motion blur off by default
+vignette tiny
+colour grade LUT small
+raindrops on camera later
+Dynamic resolution
+If dt too high for N frames, drop scale 100→90→80→70→60→50. Recover slowly.
+
+Never drop physics rate before graphics scale, shadows, particles, crowd, reflections.
+
+Car lighting
+Simple. Prefer baking AO into textures.
+
+39. PERFORMANCE ENGINEERING (CRITICAL)
+Target:
+
+60 FPS on reasonable desktop
+stable playable 30–45+ FPS on Intel HD 4400 at Low, 720p internal if needed
+no multi-second GC hitch
+load under a reasonable time on slow HDD/network
+Automatic degradation order
+shadows off
+reflections off
+particles down
+trackside objects down
+tree impostors earlier
+texture mip bias
+environment detail
+pixel scale
+extra cars simplified
+last resort: physics substep reduce, never first
+Physics cost control
+nearby detailed, far simplified
+don’t test every tree triangle
+wheel rays 4–8 per car, not 64
+spatial hash for walls
+avoid allocating Vector3 in inner loops
+precompute track frames along spline
+Debug overlay hidden
+FPS, frame time, physics time, draw calls, tris, memory estimate, car state.
+
+F8 / konami / menu cheat code. Not visible to casual players by default.
+
+40. PHYSICS DEBUG VISUALISATION
+Toggle:
+
+centre of mass
+centre of pressure
+tyre contact patches and load colours
+slip vectors
+downforce vector
+drag vector
+velocity
+suspension
+racing line
+brake zones
+DRS zones
+track limits
+bounding boxes
+AI targets
+force scale
+This is how you will tune the sim. Build it early, not after v1.
+
+41. DIFFICULTY AND ASSISTS
+Player-facing modes
+Casual
+
+strong assists available
+damage off or cosmetic
+more stable aero/tyres
+TC/ABS/steering help
+racing line
+auto gearbox default
+fuel/tyre wear reduced
+AI more forgiving
+Simulation (default for the product identity)
+
+assists optional
+real tyre/aero/fuel/ERS
+damage on
+wear on
+Hardcore
+
+no assists default
+damage on
+wear on
+fuel on
+temps on
+strict track limits
+possible stall/false start
+no racing line
+no reset without loss of time
+AI not rubber-banded
+Assists, each OFF / LOW / MED / HIGH
+steering assist
+traction control
+ABS
+stability control
+auto gearbox
+racing line
+brake assist
+pit assist
+ERS assist
+DRS assist (auto-open in zone)
+spin recovery
+braking hints
+Simulation mode changes assists and model fidelity flags, not a fake 50% acceleration multiplier as its only difference.
+
+42. SETTINGS MENUS
+Graphics
+preset
+resolution scale 50–100%
+shadows
+reflections
+motion blur
+particles
+trackside detail
+environment detail
+anti-aliasing
+dynamic resolution
+vsync if available
+FPS cap 30/60/uncapped
+mirror quality
+weather quality
+night quality
+Audio
+master
+engine
+effects
+UI
+ambient
+commentary/spotter later
+Physics / simulation
+Arcade / Assisted / Realistic
+damage
+tyre wear
+fuel
+random events
+race rules strictness
+Gameplay
+units km/h or mph
+temp C/F
+language
+UI scale
+colourblind palettes
+rumble
+camera
+ghost opacity
+racing line style
+Accessibility
+colourblind modes
+high contrast HUD
+reduced shake
+larger fonts
+hold-vs-toggle buttons
+no flashing start lights option
+subtitle spotter
+input filters
+43. SOUND UX / SPOTTER (OPTIONAL BUT VALUABLE)
+Simple event callouts, text and/or audio:
+
+“Aero available”
+“Gap 0.8”
+“Car behind attacking”
+“Yellow ahead”
+“Pit this lap”
+“Tyres overheating”
+“Low fuel”
+“Track wet in sector 3”
+Keep original voice or synthesised/text only if no license.
+
+44. REPLAY, GHOSTS, PHOTO AND FUTURE HOOKS
+Architecture must not block:
+
+ghost racing
+local replay of last lap/race (pose buffer)
+photo mode
+more cars
+more circuits
+more weather
+more AI
+optional later online ghost upload (not required)
+controller
+VR experiment later
+endurance
+other vehicle classes
+v1 does not need VR or online.
+
+If replay exists, store:
+
+car pose
+wheel steer
+DRS
+RPM
+events (collisions, flags)
+Do not record full physics internals for all cars unless compressed.
+
+45. UI STYLE GUIDE
+dark background
+white/silver text
+one accent colour (e.g. heat red or timing yellow)
+technical condensed sans-serif
+motorsport timing fonts for clock
+no comic effects
+no glass-morphism overload
+60ms button feedback, not 1s animations
+always answer: Where am I? What is the car doing? What are the tyres doing? What is the engine doing? What is aero doing? What should I change?
+Menus must be keyboard and gamepad navigable.
+
+46. PROJECT DOCUMENTATION
+Ship with:
+
+README.md — how to run on GitHub Pages, local, controls, target hardware, features by version
+LICENSES.md
+CHANGELOG.md
+docs/PHYSICS.md — model overview, units, tunables
+docs/TRACK_FORMAT.md
+docs/CAR_FORMAT.md
+docs/PERFORMANCE.md
+docs/QA.md — the test list
+README must include a legal statement: original game, not affiliated with any official championship.
+
+47. VERSIONED BUILD PLAN (DO NOT BOIL THE OCEAN)
+Do not implement every system at once. Never break previously working driving.
+
+VERSION 0.1 — First drive
+Must contain:
+
+3D environment
+Monza-inspired track ribbon + walls + grass
+one original car
+chase camera
+arrow-key controls
+basic physics (accel, brake, steer, collisions)
+start/finish
+lap timing
+basic HUD (speed, gear, lap time)
+reset
+pause
+quality Low default
+GitHub Pages compatible boot
+The car must actually drive a full lap.
+
+VERSION 0.2 — Core sim feel
+engine/gearbox
+speed-sensitive steering
+downforce and drag
+tyre grip combined slip basic
+weight transfer
+surfaces: asphalt/kerb/grass
+cockpit + TV cameras
+better HUD
+VERSION 0.3 — Energy and aero devices
+ERS
+active aero zones
+HUD status
+engine sound RPM
+debug camera/forces
+VERSION 0.4 — Race engineering
+tyre temp/wear/compounds
+fuel mass
+pit lane + pit stop basic
+setup sliders that work
+telemetry basic
+VERSION 0.5 — Damage
+part damage
+visual
+performance coupling
+retirement
+damage on/off
+VERSION 0.6 — AI race
+grid
+AI line
+overtake/defend
+start lights
+position HUD
+4+ opponents on Low with LOD
+VERSION 0.7 — Weather
+rain
+wet tyres
+grip/visibility
+dynamic optional
+VERSION 0.8 — Garage career systems
+upgrades
+development tree
+garage 3D
+livery original colours
+VERSION 0.9 — Championship and persistence
+championship
+save/export/import
+progression
+ghosts
+VERSION 1.0 — Polish
+audio
+UI
+AI
+physics tuning
+performance on HD 4400
+accessibility
+mobile fallback basic
+docs
+credits
+stable GitHub Pages deploy
+At every stage:
+
+test old controls
+add feature
+test feature
+test physics
+test performance
+test Pages compatibility
+48. TESTING PROGRAMME
+Manual and, where possible, automated headless tests of pure physics functions.
+
+Functional tests
+Accelerate from standstill — continuous RPM/gear, no teleport
+Brake from high speed — stable, no instant stop
+Low-speed tight turn — mechanical grip, no instant yaw
+High-speed sweep — aero grip, less steering lock needed
+Kerb — disturbance, not explosion
+Grass — grip loss
+ERS deploy — acceleration change, SoC drop
+Active aero valid zone — drag drop, flap open
+Active aero outside zone — rejected
+Front wing crash — downforce drop
+Tyre wear over laps — lap time falloff
+Compound change — feel difference
+Aero setup change — top speed vs stability
+Fuel load — heavier car slower
+Rain — longer braking
+Pit stop — time loss, new tyres
+Complete lap — timing accurate
+Restart session
+Reload browser — save persists
+GitHub Pages relative paths work
+Jump start
+Pit speeding
+Reverse after stop
+Limiter
+Camera cycle
+Pause time-stop
+Auto vs manual gearbox
+ABS on vs off lockup
+TC on vs off wheelspin
+Night/rain quality swap no crash
+Dynamic res engages on Low
+Import/export save
+Invalid lap on track limits
+Out of fuel
+Empty ERS
+Puncture limp
+AI does not collide in a death pile every corner
+Tab-out audio mute
+Gamepad analog steer
+30-minute leak check: memory not climbing unboundedly
+Physics unit tests (no renderer)
+tyre force symmetry left/right
+v² aero scaling
+energy conservation-ish sanity (no infinite accel)
+gear ratio monotonicity
+brake balance distribution
+fuel mass delta
+combined slip never exceeds mu * load by wild margins
+Performance tests
+On target story:
+
+first menu < reasonable load
+Low preset 1 car + track ≥ playable
+5 min no spiral hitch
+draw calls within budget
+49. UNITS, CONSTANTS AND TUNING DISCIPLINE
+Use SI internally:
+
+m, s, kg, N, Nm, rad, Pa, °C
+Convert only at UI.
+
+Keep tunables in data, not magic scattered literals.
+
+Document a baseline:
+
+mass
+power
+CdA / ClA
+tyre mu
+brake max
+fuel rate
+Tune on the first circuit with a “gold lap” target that is challenging but possible. Do not tune by screenshot.
+
+Create a debug “physics sandbox” scene: skidpad, straight, step steer.
+
+50. CODE QUALITY RULES
+small modules
+no 5,000-line god files if avoidable
+no silent catch
+fail readable
+comments for formulas
+named constants
+no leftover ripped asset comments
+avoid premature micro-optimisation except in inner physics/render loops
+inner loops: no .clone(), no new Vector3(), no garbage
+feature flags for incomplete systems
+console debug behind flag
+51. GITHUB PAGES DEPLOYMENT RULES
+index.html at repo root or /docs as chosen, documented
+no server includes
+MIME-safe JS modules
+test with repository subpath
+capitalisation-sensitive paths (Linux vs Windows)
+no spaces in asset names
+large files: keep repo reasonable; compress GLB
+LFS only if you must, but Pages+LFS can be painful — prefer small original assets
+cache bust via version query only if needed
+README badge/screenshots original
+After every version, actually open the GitHub Pages URL in a clean browser profile.
+
+52. WHAT “DONE” MEANS FOR v1.0
+The finished v1.0 should feel like a small genuine racing simulator.
+
+The player can:
+
+start from a professional menu
+pick an original open-wheel car
+pick the Monza-inspired circuit
+choose practice or race
+start from lights
+drive with keyboard or gamepad
+brake into the first chicane with weight transfer
+feel downforce at speed
+open active aero in a real zone
+spend a finite ERS battery
+heat and wear tyres
+change setup and feel it
+finish a lap, get a time, improve
+save progress
+run on a weak iGPU at Low without the sim collapsing
+It does not need to match a £40 commercial sim’s content volume.
+
+It does need honest physics, clean architecture, legal assets, and a foundation that can accept more cars, more tracks, better AI and deeper systems without a rewrite.
+
+53. FINAL INSTRUCTION TO THE IMPLEMENTER
+Build the foundation as if this will still be worked on in six months.
+
+Make v0.1 drive.
+
+Then deepen the physics.
+
+Then attach ERS and aero devices.
+
+Then tyres and fuel.
+
+Then damage.
+
+Then AI.
+
+Then weather.
+
+Then garage/upgrades.
+
+Then championship/save.
+
+Then polish.
+
+Never claim a system exists if the car does not feel it.
+
+Never ship ripped assets.
+
+Never require a backend.
+
+Never ignore Intel HD 4400.
+
+Never fake HUD numbers.
+
+The product is not the prompt. The product is a car that can be driven, felt, tuned and trusted.
